@@ -1,0 +1,1 @@
+# TruGanic Core
