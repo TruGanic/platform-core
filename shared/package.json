@@ -1,0 +1,14 @@
+{
+  "name": "@shared/types",
+  "version": "1.0.0",
+  "description": "Shared types and contracts for Availability Security platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
