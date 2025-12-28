@@ -31,9 +31,5 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=9.0.0"
-  },
-  "dependencies": {
-    "@veramo/core": "^5.0.0",
-    "express-rate-limit": "^8.2.1"
   }
 }
