@@ -1,13 +1,21 @@
 import * as dotenv from "dotenv";
 import { resolve } from "path";
 
-// 1. Load the .env file from the root directory
-dotenv.config({ path: resolve(process.cwd(), ".env") });
+// 1. Get paths relative to THIS file's location
+const configDir = __dirname;
+const serviceRoot = resolve(configDir, "../../");
+const projectRoot = resolve(serviceRoot, "../..");
 
-// 2. define the environment (development, production, etc.)
-const nodeEnv = process.env.NODE_ENV || "development";
+// 2. Load the .env file from the root directory
+dotenv.config({ path: resolve(projectRoot, ".env"), override: true });
 
-// 3. Helper function to get a string variable (throws error if missing)
+// 3. Load the .env file from the service directory
+dotenv.config({ path: resolve(serviceRoot, ".env"), override: true });
+
+// 4. define the environment (development, production, etc.)
+const nodeEnv = process.env.NODE_ENV;
+
+// 5. Helper function to get a string variable (throws error if missing)
 function getEnv(key: string, defaultValue?: string): string {
   const value = process.env[key];
   if (value) return value;
@@ -15,7 +23,7 @@ function getEnv(key: string, defaultValue?: string): string {
   throw new Error(`Missing required environment variable: ${key}`);
 }
 
-// 4. Helper function to get a number variable
+// 6. Helper function to get a number variable
 function getEnvNumber(key: string, defaultValue: number): number {
   const value = process.env[key];
   if (!value) return defaultValue;
@@ -26,7 +34,7 @@ function getEnvNumber(key: string, defaultValue: number): number {
   return parsed;
 }
 
-// 5. The Config Object
+// 7. The Config Object
 export const config = {
   nodeEnv: nodeEnv,
   port: getEnvNumber("PORT", 3001),
