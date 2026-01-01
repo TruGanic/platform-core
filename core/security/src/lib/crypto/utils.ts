@@ -56,7 +56,7 @@ export function extractPublicKeyFromDID(
       algorithm: vm.type || "ES256K",
     };
   } else if (vm.publicKeyMultibase) {
-    // Multibase format - common for Ed25519
+    // Multibase format - if you add Ed25519 support in the future
     return {
       publicKey: vm.publicKeyMultibase,
       algorithm: vm.type || "Ed25519",
@@ -106,7 +106,7 @@ export function createSignaturePayload(request: {
 
 /**
  * Verify signature using public key from DID document
- * Supports both JWT signatures and raw ECDSA signatures
+ * Supports both JWT signatures and raw ECDSA signatures (ES256K/secp256k1)
  * @param signature - The signature to verify (JWT or base64 encoded)
  * @param payload - The payload that was signed (JSON string)
  * @param didDocument - The DID document containing the public key
@@ -250,19 +250,10 @@ export async function verifySignature(
       }
     }
 
-    // For Ed25519 (if you need it in the future)
-    if (publicKeyInfo.algorithm === "Ed25519") {
-      try {
-        const verify = createVerify("Ed25519");
-        verify.update(payload);
-        return verify.verify(publicKeyInfo.publicKey, signature, "base64");
-      } catch (error) {
-        console.error("Ed25519 verification error:", error);
-        return false;
-      }
-    }
-
-    console.warn(`Unsupported algorithm: ${publicKeyInfo.algorithm}`);
+    // Unsupported algorithm
+    console.warn(
+      `Unsupported algorithm: ${publicKeyInfo.algorithm}. Only ES256K is supported.`
+    );
     return false;
   } catch (error) {
     console.error("Signature verification error:", error);
@@ -312,14 +303,10 @@ export async function signPayload(
       return signatureBuffer.toString("base64");
     }
 
-    if (algorithm === "Ed25519") {
-      const sign = createSign("Ed25519");
-      sign.update(payload);
-      const privateKeyBuffer = Buffer.from(privateKey, "hex");
-      return sign.sign(privateKeyBuffer, "base64");
-    }
-
-    throw new Error(`Unsupported algorithm: ${algorithm}`);
+    // Unsupported algorithm
+    throw new Error(
+      `Unsupported algorithm: ${algorithm}. Only ES256K is supported.`
+    );
   } catch (error) {
     console.error("Signing error:", error);
     throw error;
