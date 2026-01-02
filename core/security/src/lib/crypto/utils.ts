@@ -1,4 +1,4 @@
-import { createHash, createSign, createVerify } from "crypto";
+import { createHash } from "crypto";
 import { DIDDocument, VerificationMethod } from "@shared/types";
 import { verifyJWT } from "did-jwt";
 import { Resolver } from "did-resolver";
@@ -6,7 +6,20 @@ import { getResolver as webDidResolver } from "web-did-resolver";
 import { ec as EC } from "elliptic";
 
 /**
+ * Supported signature algorithms
+ * Add new algorithms here as you implement them
+ */
+export type SupportedAlgorithm =
+  | "ES256K"
+  | "Ed25519"
+  | "ES256"
+  | "ES384"
+  | "ES512"
+  | "RS256";
+
+/**
  * Extract public key from DID document
+ * Automatically detects algorithm from JWK curve or type
  * @param didDocument - The DID document containing verification methods
  * @param verificationMethodId - Optional specific verification method ID to use
  * @returns Public key info with algorithm, or null if not found
@@ -25,7 +38,6 @@ export function extractPublicKeyFromDID(
   // Find verification method
   let vm: VerificationMethod | undefined;
   if (verificationMethodId) {
-    // Use specified verification method
     vm = didDocument.verificationMethod.find(
       (v) =>
         v.id === verificationMethodId || v.id.endsWith(verificationMethodId)
@@ -50,16 +62,57 @@ export function extractPublicKeyFromDID(
 
   // Extract public key based on format
   if (vm.publicKeyJwk) {
-    // JWK format (JSON Web Key) - common for ES256K
+    // JWK format (JSON Web Key)
+    let algorithm = "ES256K"; // default
+
+    // Parse JWK to check curve and algorithm
+    let jwk: any;
+    if (typeof vm.publicKeyJwk === "string") {
+      try {
+        jwk = JSON.parse(vm.publicKeyJwk);
+      } catch {
+        jwk = vm.publicKeyJwk;
+      }
+    } else {
+      jwk = vm.publicKeyJwk;
+    }
+
+    // Determine algorithm from JWK properties
+    if (jwk.alg) {
+      algorithm = jwk.alg;
+    } else if (jwk.crv) {
+      // Map curve to algorithm
+      const curveToAlgorithm: Record<string, string> = {
+        secp256k1: "ES256K",
+        "P-256": "ES256",
+        secp256r1: "ES256",
+        "P-384": "ES384",
+        secp384r1: "ES384",
+        "P-521": "ES512",
+        secp521r1: "ES512",
+        Ed25519: "Ed25519",
+        ed25519: "Ed25519",
+      };
+      algorithm = curveToAlgorithm[jwk.crv] || algorithm;
+    } else if (jwk.kty) {
+      // Infer from key type
+      const ktyToAlgorithm: Record<string, string> = {
+        EC: "ES256K",
+        OKP: "Ed25519",
+        RSA: "RS256",
+      };
+      algorithm = ktyToAlgorithm[jwk.kty] || algorithm;
+    }
+
     return {
-      publicKey: JSON.stringify(vm.publicKeyJwk),
-      algorithm: vm.type || "ES256K",
+      publicKey: JSON.stringify(jwk),
+      algorithm: algorithm,
     };
   } else if (vm.publicKeyMultibase) {
-    // Multibase format - if you add Ed25519 support in the future
+    // Multibase format - typically Ed25519
     return {
       publicKey: vm.publicKeyMultibase,
-      algorithm: vm.type || "Ed25519",
+      algorithm: vm.type?.includes("Ed25519") ? "Ed25519" : "ES256K",
     };
   }
 
@@ -106,7 +159,7 @@ export function createSignaturePayload(request: {
 
 /**
  * Verify signature using public key from DID document
- * Supports both JWT signatures and raw ECDSA signatures (ES256K/secp256k1)
+ * Supports ES256K (fully implemented), other algorithms can be added easily
  * @param signature - The signature to verify (JWT or base64 encoded)
  * @param payload - The payload that was signed (JSON string)
  * @param didDocument - The DID document containing the public key
@@ -121,7 +174,6 @@ export async function verifySignature(
 ): Promise<boolean> {
   try {
     // Try to verify as JWT first (common case)
-    // JWT format: header.payload.signature (3 parts separated by dots)
     if (signature.includes(".") && signature.split(".").length === 3) {
       try {
         const resolverConfig: any = {
@@ -129,24 +181,18 @@ export async function verifySignature(
         };
         const resolver = new Resolver(resolverConfig);
 
-        // Verify JWT signature using did-jwt
         const { payload: jwtPayload, issuer } = await verifyJWT(signature, {
           resolver,
         });
 
-        // Verify issuer matches the DID
         if (issuer !== did) {
           console.error("JWT issuer does not match DID");
           return false;
         }
 
-        // Verify the payload matches the request payload
-        // JWT payload may contain additional fields (iat, exp, etc.)
         const expectedPayload = JSON.parse(payload);
         const jwtPayloadObj = jwtPayload as any;
 
-        // Check if the request payload matches the JWT payload
-        // Allow for additional fields in JWT
         const payloadMatches = Object.keys(expectedPayload).every((key) => {
           return (
             JSON.stringify(jwtPayloadObj[key]) ===
@@ -156,7 +202,7 @@ export async function verifySignature(
 
         return payloadMatches;
       } catch (jwtError: any) {
-        // Not a valid JWT or verification failed, continue with raw signature verification
+        // Not a valid JWT, continue with raw signature verification
         console.warn(
           "JWT verification failed, trying raw signature:",
           jwtError.message
@@ -170,91 +216,30 @@ export async function verifySignature(
       return false;
     }
 
-    // For ES256K (secp256k1) - use proper ECDSA verification
-    if (
-      publicKeyInfo.algorithm === "ES256K" ||
-      publicKeyInfo.algorithm.includes("ES256")
-    ) {
-      try {
-        // Parse JWK if it's a JSON string
-        let publicKeyJwk: any;
-        try {
-          publicKeyJwk = JSON.parse(publicKeyInfo.publicKey);
-        } catch {
-          // Not JSON, use as-is
-          publicKeyJwk = publicKeyInfo.publicKey;
-        }
+    const algorithm = publicKeyInfo.algorithm;
 
-        // Initialize secp256k1 curve
-        const secp256k1 = new EC("secp256k1");
+    // Route to appropriate verification method
+    // Add new algorithms here by adding new cases
+    switch (algorithm) {
+      case "ES256K":
+        return verifyES256K(signature, payload, publicKeyInfo);
 
-        // Extract public key from JWK
-        if (!publicKeyJwk.x || !publicKeyJwk.y) {
-          console.error("Invalid JWK: missing x or y coordinates");
-          return false;
-        }
+      // TODO: Implement other algorithms as needed
+      // case "Ed25519":
+      //   return verifyEd25519(signature, payload, publicKeyInfo);
+      // case "ES256":
+      // case "ES384":
+      // case "ES512":
+      //   return verifyECDSA(signature, payload, publicKeyInfo, algorithm);
+      // case "RS256":
+      //   return verifyRS256(signature, payload, publicKeyInfo);
 
-        // Convert JWK coordinates to Buffer
-        const xBuffer = Buffer.from(publicKeyJwk.x, "base64url");
-        const yBuffer = Buffer.from(publicKeyJwk.y, "base64url");
-
-        // Create public key point (uncompressed format: 0x04 + x + y)
-        const publicKeyPoint = secp256k1.curve.point(
-          secp256k1.curve.decodePoint(
-            Buffer.concat([Buffer.from([0x04]), xBuffer, yBuffer])
-          )
+      default:
+        console.warn(
+          `Unsupported algorithm: ${algorithm}. Only ES256K is currently implemented.`
         );
-
-        // Create key pair from public point
-        const keyPair = secp256k1.keyPair({ pub: publicKeyPoint });
-
-        // Hash the payload using SHA-256
-        const hash = createHash("sha256").update(payload).digest();
-
-        // Decode signature (base64 or base64url)
-        let signatureBuffer: Buffer;
-        try {
-          // Try base64 first
-          signatureBuffer = Buffer.from(signature, "base64");
-        } catch {
-          // Try base64url
-          signatureBuffer = Buffer.from(signature, "base64url");
-        }
-
-        // Parse signature (raw r,s format: 32 bytes each, 64 bytes total)
-        let r: Buffer, s: Buffer;
-        if (signatureBuffer.length === 64) {
-          // Raw r,s format (32 bytes each)
-          r = signatureBuffer.slice(0, 32);
-          s = signatureBuffer.slice(32, 64);
-        } else {
-          // Invalid signature length
-          if (signatureBuffer.length < 64) {
-            console.error("Invalid signature length");
-            return false;
-          }
-          // Assume first 64 bytes are r,s
-          r = signatureBuffer.slice(0, 32);
-          s = signatureBuffer.slice(32, 64);
-        }
-
-        // Verify signature
-        const isValid = keyPair.verify(hash, {
-          r: r.toString("hex"),
-          s: s.toString("hex"),
-        });
-        return isValid;
-      } catch (error) {
-        console.error("ES256K verification error:", error);
         return false;
-      }
     }
-
-    // Unsupported algorithm
-    console.warn(
-      `Unsupported algorithm: ${publicKeyInfo.algorithm}. Only ES256K is supported.`
-    );
-    return false;
   } catch (error) {
     console.error("Signature verification error:", error);
     return false;
@@ -262,8 +247,150 @@ export async function verifySignature(
 }
 
 /**
+ * Verify ES256K (secp256k1) signature
+ * Supports both hex and base64url encoded coordinates
+ */
+function verifyES256K(
+  signature: string,
+  payload: string,
+  publicKeyInfo: { publicKey: string; algorithm: string }
+): boolean {
+  try {
+    // Parse JWK
+    let publicKeyJwk: any;
+    try {
+      publicKeyJwk = JSON.parse(publicKeyInfo.publicKey);
+    } catch {
+      publicKeyJwk = publicKeyInfo.publicKey;
+    }
+
+    const secp256k1 = new EC("secp256k1");
+
+    if (!publicKeyJwk.x || !publicKeyJwk.y) {
+      console.error("Invalid JWK: missing x or y coordinates");
+      return false;
+    }
+
+    // Decode coordinates (handles both hex and base64url)
+    const xBuffer = decodeCoordinate(publicKeyJwk.x);
+    const yBuffer = decodeCoordinate(publicKeyJwk.y);
+
+    if (xBuffer.length !== 32 || yBuffer.length !== 32) {
+      console.error(
+        `Invalid coordinate length: X=${xBuffer.length}, Y=${yBuffer.length} (expected 32 each)`
+      );
+      return false;
+    }
+
+    // Create uncompressed public key: 0x04 + x + y (65 bytes)
+    const uncompressedPublicKey = Buffer.concat([
+      Buffer.from([0x04]),
+      xBuffer,
+      yBuffer,
+    ]);
+
+    const publicKeyHex = uncompressedPublicKey.toString("hex");
+    const keyPair = secp256k1.keyFromPublic(publicKeyHex, "hex");
+
+    // Validate public key point
+    if (!keyPair.getPublic().validate()) {
+      console.error("Invalid public key point - not on secp256k1 curve");
+      return false;
+    }
+
+    return verifyWithKeyPair(keyPair, signature, payload);
+  } catch (error: any) {
+    console.error("ES256K verification error:", error);
+    return false;
+  }
+}
+
+/**
+ * Helper: Decode coordinate from hex or base64url to Buffer
+ * Supports both formats for maximum compatibility
+ */
+function decodeCoordinate(coord: string): Buffer {
+  // Check if it's hex (64 hex chars = 32 bytes for secp256k1)
+  if (/^[0-9a-fA-F]+$/.test(coord)) {
+    if (coord.length === 64) {
+      return Buffer.from(coord, "hex");
+    } else if (coord.length === 66 && coord.startsWith("0x")) {
+      return Buffer.from(coord.substring(2), "hex");
+    }
+    throw new Error(
+      `Invalid hex coordinate length: ${coord.length} (expected 64)`
+    );
+  }
+
+  // It's base64url - decode it
+  let base64 = coord.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4) {
+    base64 += "=";
+  }
+
+  const decoded = Buffer.from(base64, "base64");
+
+  // Ensure exactly 32 bytes
+  if (decoded.length === 32) {
+    return decoded;
+  } else if (decoded.length > 32) {
+    return decoded.slice(decoded.length - 32);
+  } else {
+    const padded = Buffer.alloc(32);
+    decoded.copy(padded, 32 - decoded.length);
+    return padded;
+  }
+}
+
+/**
+ * Helper: Verify signature with a key pair
+ */
+function verifyWithKeyPair(
+  keyPair: any,
+  signature: string,
+  payload: string
+): boolean {
+  try {
+    // Hash the payload
+    const hash = createHash("sha256").update(payload).digest();
+
+    // Decode signature (base64 or base64url)
+    let signatureBuffer: Buffer;
+    try {
+      signatureBuffer = Buffer.from(signature, "base64");
+    } catch {
+      let base64 = signature.replace(/-/g, "+").replace(/_/g, "/");
+      while (base64.length % 4) {
+        base64 += "=";
+      }
+      signatureBuffer = Buffer.from(base64, "base64");
+    }
+
+    if (signatureBuffer.length !== 64) {
+      console.error(
+        `Invalid signature length: ${signatureBuffer.length} (expected 64)`
+      );
+      return false;
+    }
+
+    // Parse r, s (32 bytes each)
+    const r = signatureBuffer.slice(0, 32);
+    const s = signatureBuffer.slice(32, 64);
+
+    // Verify signature
+    return keyPair.verify(hash, {
+      r: r.toString("hex"),
+      s: s.toString("hex"),
+    });
+  } catch (error: any) {
+    console.error("Verification error:", error);
+    return false;
+  }
+}
+
+/**
  * Sign payload with private key
- * Returns signature in base64 format (r,s concatenated, 64 bytes total)
+ * Currently supports ES256K, easily extensible for other algorithms
  * @param payload - The payload to sign (JSON string)
  * @param privateKey - Private key in hex format (no 0x prefix)
  * @param algorithm - Signature algorithm (default: ES256K)
@@ -274,41 +401,45 @@ export async function signPayload(
   privateKey: string,
   algorithm: string = "ES256K"
 ): Promise<string> {
-  try {
-    if (algorithm === "ES256K" || algorithm.includes("ES256")) {
-      // Use elliptic library for proper secp256k1 signing
-      const secp256k1 = new EC("secp256k1");
+  switch (algorithm) {
+    case "ES256K":
+      return signES256K(payload, privateKey);
 
-      // Ensure private key is in hex format
-      let privateKeyHex = privateKey;
-      if (!/^[0-9a-fA-F]+$/.test(privateKey)) {
-        // If not hex, try to convert from other formats
-        privateKeyHex = Buffer.from(privateKey, "utf8").toString("hex");
-      }
+    // TODO: Add other algorithms as needed
+    // case "Ed25519":
+    //   return signEd25519(payload, privateKey);
+    // case "ES256":
+    // case "ES384":
+    // case "ES512":
+    //   return signECDSA(payload, privateKey, algorithm);
 
-      // Create key pair from private key
-      const keyPair = secp256k1.keyFromPrivate(privateKeyHex, "hex");
-
-      // Hash the payload using SHA-256
-      const hash = createHash("sha256").update(payload).digest();
-
-      // Sign the hash
-      const signature = keyPair.sign(hash);
-
-      // Convert signature to r,s format (32 bytes each, concatenated)
-      const r = signature.r.toArray("be", 32);
-      const s = signature.s.toArray("be", 32);
-      const signatureBuffer = Buffer.concat([Buffer.from(r), Buffer.from(s)]);
-
-      return signatureBuffer.toString("base64");
-    }
-
-    // Unsupported algorithm
-    throw new Error(
-      `Unsupported algorithm: ${algorithm}. Only ES256K is supported.`
-    );
-  } catch (error) {
-    console.error("Signing error:", error);
-    throw error;
+    default:
+      throw new Error(
+        `Unsupported algorithm: ${algorithm}. Only ES256K is currently implemented.`
+      );
   }
+}
+
+/**
+ * Sign with ES256K (secp256k1)
+ */
+function signES256K(payload: string, privateKey: string): string {
+  const secp256k1 = new EC("secp256k1");
+
+  // Ensure private key is in hex format
+  let privateKeyHex = privateKey;
+  if (!/^[0-9a-fA-F]+$/.test(privateKey)) {
+    privateKeyHex = Buffer.from(privateKey, "utf8").toString("hex");
+  }
+
+  const keyPair = secp256k1.keyFromPrivate(privateKeyHex, "hex");
+  const hash = createHash("sha256").update(payload).digest();
+  const signature = keyPair.sign(hash);
+
+  // Convert to r,s format (32 bytes each, concatenated)
+  const r = signature.r.toArray("be", 32);
+  const s = signature.s.toArray("be", 32);
+  const signatureBuffer = Buffer.concat([Buffer.from(r), Buffer.from(s)]);
+
+  return signatureBuffer.toString("base64");
 }
