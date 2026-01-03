@@ -7,7 +7,10 @@
     "dev": "nodemon --delay 1 --exec ts-node -r tsconfig-paths/register src/server.ts",
     "build": "tsc",
     "start": "node -r tsconfig-paths/register dist/server.js",
-    "test": "jest"
+    "test": "jest",
+    "test:did-resolver": "ts-node -r tsconfig-paths/register src/test/did-resolver.test.ts",
+    "test:vc-issuer": "ts-node -r tsconfig-paths/register src/test/vc-issuer.test.ts",
+    "test:all": "npm run test:did-resolver && npm run test:vc-issuer"
   },
   "dependencies": {
     "@digitalbazaar/vc": "^4.0.0",
