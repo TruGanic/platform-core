@@ -60,6 +60,7 @@ if (config.nodeEnv !== "production") {
 
 // Helper methods for convenience
 export const log = {
+  debug: (message: string, metadata?: any) => logger.debug(message, metadata),
   info: (message: string, metadata?: any) => logger.info(message, metadata),
   warn: (message: string, metadata?: any) => logger.warn(message, metadata),
   error: (message: string, error?: Error | any, metadata?: any) => {

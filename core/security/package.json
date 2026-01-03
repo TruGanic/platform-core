@@ -12,6 +12,7 @@
     "test:vc-issuer": "ts-node -r tsconfig-paths/register src/test/vc-issuer.test.ts",
     "test:vc-verifier": "ts-node -r tsconfig-paths/register src/test/vc-verifier.test.ts",
     "test:audit": "ts-node -r tsconfig-paths/register src/test/audit.test.ts",
+    "test:authenticator": "ts-node -r tsconfig-paths/register src/test/authenticator.test.ts",
     "test:all": "npm run test:did-resolver && npm run test:vc-issuer && npm run test:vc-verifier && npm run test:audit"
   },
   "dependencies": {

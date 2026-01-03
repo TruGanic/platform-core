@@ -2,4 +2,5 @@
 // npm run test:vc-issuer
 // npm run test:vc-verifier
 // npm run test:audit
+// npm run test:authenticator
 // npm run test:all
