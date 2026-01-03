@@ -98,8 +98,6 @@ export class VCIssuerService {
     const signer = ES256KSigner(privateKeyBuffer);
 
     // Create JWT payload
-    const { proof, ...vcWithoutProof } = vc;
-
     const jwtPayload = {
       iss: this.coreDID,
       sub: vc.credentialSubject.id,
