@@ -50,4 +50,6 @@ export const config = {
   redis: {
     url: getEnv("REDIS_URL"),
   },
+
+  corePrivateKey: getEnv("CORE_PRIVATE_KEY"),
 };
