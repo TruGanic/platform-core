@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS verifiable_credentials (
     did VARCHAR(255) NOT NULL,
     plugin_id VARCHAR(255) NOT NULL,
     vc_data JSONB NOT NULL,
-    jws VARCHAR(5000), -- JWT string format
+    jws TEXT, -- JWT string format
     issuer_did VARCHAR(255) NOT NULL,
     issuance_date TIMESTAMP NOT NULL,
     expiration_date TIMESTAMP,
