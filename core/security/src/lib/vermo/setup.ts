@@ -2,6 +2,7 @@ import { createAgent, IAgentOptions } from "@veramo/core";
 import { DIDResolverPlugin } from "@veramo/did-resolver";
 import { Resolver } from "did-resolver";
 import { getResolver as webDidResolver } from "web-did-resolver";
+import { log } from "@/lib/logger";
 
 /**
  * Setup Veramo agent for DID/VC operations
@@ -19,7 +20,7 @@ export function createVeramoAgent() {
     Object.assign(resolverConfig, keyDidResolver());
   } catch (error) {
     // key-did-resolver is optional, so we just warn if it's not available
-    console.warn("key-did-resolver not available, skipping did:key support");
+    log.warn("key-did-resolver not available, skipping did:key support");
   }
 
   // Create the resolver instance

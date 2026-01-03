@@ -6,6 +6,7 @@ import {
   signPayload,
 } from "@/lib/crypto";
 import axios from "axios";
+import { log } from "@/lib/logger";
 
 /**
  * Real-world test using demo-client-1 DID and private key
@@ -33,16 +34,16 @@ const SECURITY_SERVICE_URL =
   process.env.SECURITY_SERVICE_URL || "http://localhost:3001";
 
 async function testResolveDID() {
-  console.log("\n🧪 Step 1: Resolving DID from GitHub Pages...\n");
+  log.info("\n🧪 Step 1: Resolving DID from GitHub Pages...\n");
 
   try {
-    console.log(`   Resolving: ${DEMO_CLIENT_1_DID}`);
+    log.info(`   Resolving: ${DEMO_CLIENT_1_DID}`);
     const resolution = await agent.resolveDid({ didUrl: DEMO_CLIENT_1_DID });
 
     if (resolution.didDocument) {
-      console.log("   ✅ DID Resolution: SUCCESS");
-      console.log(`   DID Document ID: ${resolution.didDocument.id}`);
-      console.log(
+      log.info("   ✅ DID Resolution: SUCCESS");
+      log.info(`   DID Document ID: ${resolution.didDocument.id}`);
+      log.info(
         `   Verification Methods: ${
           resolution.didDocument.verificationMethod?.length || 0
         }`
@@ -54,28 +55,28 @@ async function testResolveDID() {
         resolution.didDocument.verificationMethod.length > 0
       ) {
         const vm = resolution.didDocument.verificationMethod[0];
-        console.log(`   Verification Method Type: ${vm.type}`);
-        console.log(`   Verification Method ID: ${vm.id}`);
+        log.info(`   Verification Method Type: ${vm.type}`);
+        log.info(`   Verification Method ID: ${vm.id}`);
       }
 
       return resolution.didDocument;
     } else {
-      console.log("   ❌ DID Resolution: FAILED");
-      console.log("   Error:", resolution.didResolutionMetadata?.error);
+      log.info("   ❌ DID Resolution: FAILED");
+      log.info("   Error:", resolution.didResolutionMetadata?.error);
       return null;
     }
   } catch (error: any) {
-    console.log("   ❌ DID Resolution: ERROR");
-    console.log("   Error:", error.message);
+    log.info("   ❌ DID Resolution: ERROR");
+    log.info("   Error:", error.message);
     return null;
   }
 }
 
 async function testExtractPublicKey(didDocument: any) {
-  console.log("\n🧪 Step 2: Extracting Public Key from DID Document...\n");
+  log.info("\n🧪 Step 2: Extracting Public Key from DID Document...\n");
 
   if (!didDocument) {
-    console.log("   ⚠️  Skipping: No DID document available");
+    log.info("   ⚠️  Skipping: No DID document available");
     return null;
   }
 
@@ -83,37 +84,37 @@ async function testExtractPublicKey(didDocument: any) {
     const publicKeyInfo = extractPublicKeyFromDID(didDocument);
 
     if (publicKeyInfo) {
-      console.log("   ✅ Extract Public Key: SUCCESS");
-      console.log(`   Algorithm: ${publicKeyInfo.algorithm}`);
+      log.info("   ✅ Extract Public Key: SUCCESS");
+      log.info(`   Algorithm: ${publicKeyInfo.algorithm}`);
 
       // Parse and show JWK details
       try {
         const jwk = JSON.parse(publicKeyInfo.publicKey);
-        console.log(`   Key Type: ${jwk.kty}`);
-        console.log(`   Curve: ${jwk.crv}`);
-        console.log(`   X coordinate: ${jwk.x.substring(0, 20)}...`);
-        console.log(`   Y coordinate: ${jwk.y.substring(0, 20)}...`);
+        log.info(`   Key Type: ${jwk.kty}`);
+        log.info(`   Curve: ${jwk.crv}`);
+        log.info(`   X coordinate: ${jwk.x.substring(0, 20)}...`);
+        log.info(`   Y coordinate: ${jwk.y.substring(0, 20)}...`);
       } catch {
-        console.log(
+        log.info(
           `   Public Key: ${publicKeyInfo.publicKey.substring(0, 50)}...`
         );
       }
 
       return publicKeyInfo;
     } else {
-      console.log("   ❌ Extract Public Key: FAILED");
-      console.log("   Could not extract public key from DID document");
+      log.info("   ❌ Extract Public Key: FAILED");
+      log.info("   Could not extract public key from DID document");
       return null;
     }
   } catch (error: any) {
-    console.log("   ❌ Extract Public Key: ERROR");
-    console.log("   Error:", error.message);
+    log.info("   ❌ Extract Public Key: ERROR");
+    log.info("   Error:", error.message);
     return null;
   }
 }
 
 function testCreateRequestPayload() {
-  console.log("\n🧪 Step 3: Creating Request Payload...\n");
+  log.info("\n🧪 Step 3: Creating Request Payload...\n");
 
   try {
     // Create a realistic API request
@@ -144,29 +145,29 @@ function testCreateRequestPayload() {
       nonce: request.nonce,
     });
 
-    console.log("   ✅ Create Payload: SUCCESS");
-    console.log(`   Method: ${request.method}`);
-    console.log(`   Path: ${request.path}`);
-    console.log(`   Timestamp: ${request.timestamp}`);
-    console.log(`   Nonce: ${request.nonce}`);
-    console.log(`   Payload length: ${payload.length} characters`);
-    console.log(`   Payload preview: ${payload.substring(0, 150)}...`);
+    log.info("   ✅ Create Payload: SUCCESS");
+    log.info(`   Method: ${request.method}`);
+    log.info(`   Path: ${request.path}`);
+    log.info(`   Timestamp: ${request.timestamp}`);
+    log.info(`   Nonce: ${request.nonce}`);
+    log.info(`   Payload length: ${payload.length} characters`);
+    log.info(`   Payload preview: ${payload.substring(0, 150)}...`);
 
     return { request, payload };
   } catch (error: any) {
-    console.log("   ❌ Create Payload: ERROR");
-    console.log("   Error:", error.message);
+    log.info("   ❌ Create Payload: ERROR");
+    log.info("   Error:", error.message);
     return null;
   }
 }
 
 async function testSignRequest(payload: string) {
-  console.log("\n🧪 Step 4: Signing Request with Private Key...\n");
+  log.info("\n🧪 Step 4: Signing Request with Private Key...\n");
 
   if (!DEMO_CLIENT_1_PRIVATE_KEY) {
-    console.log("   ❌ Sign Request: FAILED");
-    console.log("   Error: DEMO_CLIENT_1_PRIVATE_KEY not provided");
-    console.log("   Set it in .env or pass as environment variable");
+    log.info("   ❌ Sign Request: FAILED");
+    log.info("   Error: DEMO_CLIENT_1_PRIVATE_KEY not provided");
+    log.info("   Set it in .env or pass as environment variable");
     return null;
   }
 
@@ -177,22 +178,22 @@ async function testSignRequest(payload: string) {
       privateKey = privateKey.substring(2);
     }
 
-    console.log(
+    log.info(
       `   Private Key (first 20 chars): ${privateKey.substring(0, 20)}...`
     );
-    console.log(`   Private Key length: ${privateKey.length} characters`);
+    log.info(`   Private Key length: ${privateKey.length} characters`);
 
     const signature = await signPayload(payload, privateKey, "ES256K");
 
-    console.log("   ✅ Sign Request: SUCCESS");
-    console.log(`   Signature (base64): ${signature.substring(0, 50)}...`);
-    console.log(`   Signature length: ${signature.length} characters`);
+    log.info("   ✅ Sign Request: SUCCESS");
+    log.info(`   Signature (base64): ${signature.substring(0, 50)}...`);
+    log.info(`   Signature length: ${signature.length} characters`);
 
     return signature;
   } catch (error: any) {
-    console.log("   ❌ Sign Request: ERROR");
-    console.log("   Error:", error.message);
-    console.log("   Stack:", error.stack);
+    log.info("   ❌ Sign Request: ERROR");
+    log.info("   Error:", error.message);
+    log.info("   Stack:", error.stack);
     return null;
   }
 }
@@ -202,15 +203,15 @@ async function testVerifySignature(
   payload: string,
   didDocument: any
 ) {
-  console.log("\n🧪 Step 5: Verifying Signature with DID Document...\n");
+  log.info("\n🧪 Step 5: Verifying Signature with DID Document...\n");
 
   if (!signature || !payload || !didDocument) {
-    console.log("   ⚠️  Skipping: Missing required data");
+    log.info("   ⚠️  Skipping: Missing required data");
     return false;
   }
 
   try {
-    console.log(`   Verifying signature for DID: ${DEMO_CLIENT_1_DID}`);
+    log.info(`   Verifying signature for DID: ${DEMO_CLIENT_1_DID}`);
 
     const isValid = await verifySignature(
       signature,
@@ -220,26 +221,26 @@ async function testVerifySignature(
     );
 
     if (isValid) {
-      console.log("   ✅ Verify Signature: SUCCESS");
-      console.log("   Signature is valid! Authentication would pass.");
+      log.info("   ✅ Verify Signature: SUCCESS");
+      log.info("   Signature is valid! Authentication would pass.");
     } else {
-      console.log("   ❌ Verify Signature: FAILED");
-      console.log(
+      log.info("   ❌ Verify Signature: FAILED");
+      log.info(
         "   Signature verification failed. Authentication would be rejected."
       );
     }
 
     return isValid;
   } catch (error: any) {
-    console.log("   ❌ Verify Signature: ERROR");
-    console.log("   Error:", error.message);
-    console.log("   Stack:", error.stack);
+    log.info("   ❌ Verify Signature: ERROR");
+    log.info("   Error:", error.message);
+    log.info("   Stack:", error.stack);
     return false;
   }
 }
 
 async function testFullRequestFlow() {
-  console.log(
+  log.info(
     "\n🧪 Step 6: Testing Full Request Flow (Optional - if Security Service is running)...\n"
   );
 
@@ -284,34 +285,34 @@ async function testFullRequestFlow() {
       }
     );
     
-    console.log('   ✅ Full Request Flow: SUCCESS');
-    console.log('   Response:', response.data);
+    log.info('   ✅ Full Request Flow: SUCCESS');
+    log.info('   Response:', response.data);
   } catch (error: any) {
-    console.log('   ⚠️  Full Request Flow: SKIPPED (Service not running or not implemented yet)');
-    console.log('   Error:', error.message);
+    log.info('   ⚠️  Full Request Flow: SKIPPED (Service not running or not implemented yet)');
+    log.info('   Error:', error.message);
   }
   */
 
-  console.log(
+  log.info(
     "   ⚠️  Skipped: Security Service authentication endpoint not ready yet"
   );
 }
 
 // Main test runner
 async function runRealWorldTest() {
-  console.log("═══════════════════════════════════════════════════════");
-  console.log("   Real-World Test: demo-client-1 Authentication Flow");
-  console.log("═══════════════════════════════════════════════════════");
+  log.info("═══════════════════════════════════════════════════════");
+  log.info("   Real-World Test: demo-client-1 Authentication Flow");
+  log.info("═══════════════════════════════════════════════════════");
 
   // Check if private key is provided
   if (!DEMO_CLIENT_1_PRIVATE_KEY) {
-    console.log("\n❌ ERROR: DEMO_CLIENT_1_PRIVATE_KEY not provided!");
-    console.log("\nTo run this test:");
-    console.log("1. Add to your .env file:");
-    console.log("   DEMO_CLIENT_1_PRIVATE_KEY=your_private_key_here");
-    console.log("\n2. Or set as environment variable:");
-    console.log("   export DEMO_CLIENT_1_PRIVATE_KEY=your_private_key_here");
-    console.log(
+    log.info("\n❌ ERROR: DEMO_CLIENT_1_PRIVATE_KEY not provided!");
+    log.info("\nTo run this test:");
+    log.info("1. Add to your .env file:");
+    log.info("   DEMO_CLIENT_1_PRIVATE_KEY=your_private_key_here");
+    log.info("\n2. Or set as environment variable:");
+    log.info("   export DEMO_CLIENT_1_PRIVATE_KEY=your_private_key_here");
+    log.info(
       "\n3. Or pass directly in the code (not recommended for production)"
     );
     process.exit(1);
@@ -326,7 +327,7 @@ async function runRealWorldTest() {
   // Step 3: Create Request Payload
   const payloadData = testCreateRequestPayload();
   if (!payloadData) {
-    console.log("\n❌ Failed to create payload. Stopping tests.");
+    log.info("\n❌ Failed to create payload. Stopping tests.");
     return;
   }
   const { request, payload } = payloadData;
@@ -334,7 +335,7 @@ async function runRealWorldTest() {
   // Step 4: Sign Request
   const signature = await testSignRequest(payload);
   if (!signature) {
-    console.log("\n❌ Failed to sign request. Stopping tests.");
+    log.info("\n❌ Failed to sign request. Stopping tests.");
     return;
   }
 
@@ -345,39 +346,39 @@ async function runRealWorldTest() {
   await testFullRequestFlow();
 
   // Summary
-  console.log("\n═══════════════════════════════════════════════════════");
-  console.log("   Test Summary");
-  console.log("═══════════════════════════════════════════════════════");
-  console.log(`✅ DID Resolution: ${didDocument ? "PASS" : "FAIL"}`);
-  console.log(`✅ Extract Public Key: ${publicKeyInfo ? "PASS" : "FAIL"}`);
-  console.log(`✅ Create Payload: ${payload ? "PASS" : "FAIL"}`);
-  console.log(`✅ Sign Request: ${signature ? "PASS" : "FAIL"}`);
-  console.log(`✅ Verify Signature: ${isValid ? "PASS" : "FAIL"}`);
+  log.info("\n═══════════════════════════════════════════════════════");
+  log.info("   Test Summary");
+  log.info("═══════════════════════════════════════════════════════");
+  log.info(`✅ DID Resolution: ${didDocument ? "PASS" : "FAIL"}`);
+  log.info(`✅ Extract Public Key: ${publicKeyInfo ? "PASS" : "FAIL"}`);
+  log.info(`✅ Create Payload: ${payload ? "PASS" : "FAIL"}`);
+  log.info(`✅ Sign Request: ${signature ? "PASS" : "FAIL"}`);
+  log.info(`✅ Verify Signature: ${isValid ? "PASS" : "FAIL"}`);
 
   const allPassed =
     didDocument && publicKeyInfo && payload && signature && isValid;
 
   if (allPassed) {
-    console.log(
+    log.info(
       "\n🎉 All tests passed! Your authentication flow is working correctly!"
     );
-    console.log("\n📋 Request Details for Demo:");
-    console.log(`   DID: ${DEMO_CLIENT_1_DID}`);
-    console.log(`   Method: ${request.method}`);
-    console.log(`   Path: ${request.path}`);
-    console.log(`   Timestamp: ${request.timestamp}`);
-    console.log(`   Nonce: ${request.nonce}`);
-    console.log(`   Signature: ${signature}`);
+    log.info("\n📋 Request Details for Demo:");
+    log.info(`   DID: ${DEMO_CLIENT_1_DID}`);
+    log.info(`   Method: ${request.method}`);
+    log.info(`   Path: ${request.path}`);
+    log.info(`   Timestamp: ${request.timestamp}`);
+    log.info(`   Nonce: ${request.nonce}`);
+    log.info(`   Signature: ${signature}`);
   } else {
-    console.log("\n⚠️  Some tests failed. Check the errors above.");
+    log.info("\n⚠️  Some tests failed. Check the errors above.");
   }
 
-  console.log("═══════════════════════════════════════════════════════\n");
+  log.info("═══════════════════════════════════════════════════════\n");
 }
 
 // Run tests
 runRealWorldTest().catch((error) => {
-  console.error("\n❌ Fatal error:", error);
+  log.error("\n❌ Fatal error:", error);
   process.exit(1);
 });
 

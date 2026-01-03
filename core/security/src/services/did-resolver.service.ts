@@ -6,6 +6,7 @@ import {
   ResolveDIDResponse,
 } from "@shared/types";
 import { initRedis } from "@/lib/cache";
+import { log } from "@/lib/logger";
 
 export class DIDResolverService {
   private redis = initRedis();
@@ -38,7 +39,7 @@ export class DIDResolverService {
 
       return { did, document, resolved: true };
     } catch (error: any) {
-      console.error("DID resolution error:", error);
+      log.error("DID resolution error", error);
       return { did, document: {} as DIDDocument, resolved: false };
     }
   }
@@ -51,7 +52,7 @@ export class DIDResolverService {
       const cached = await this.redis.get(`did:${did}`);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
-      console.error("Cache read error:", error);
+      log.error("Cache read error", error);
       return null;
     }
   }
@@ -67,7 +68,7 @@ export class DIDResolverService {
         JSON.stringify(document)
       );
     } catch (error) {
-      console.error("Cache write error:", error);
+      log.error("Cache write error", error);
     }
   }
 
@@ -78,7 +79,7 @@ export class DIDResolverService {
     try {
       await this.redis.del(`did:${did}`);
     } catch (error) {
-      console.error("Cache invalidation error:", error);
+      log.error("Cache invalidation error", error);
     }
   }
 }
