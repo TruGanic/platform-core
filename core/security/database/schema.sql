@@ -159,3 +159,9 @@ INSERT INTO verifiable_credentials (
 DELETE FROM vc_revocation_list;
 DELETE FROM audit_logs;
 DELETE FROM verifiable_credentials;
+
+-- Faster than DELETE, also resets auto-increment sequences
+-- Order matters due to foreign key constraints
+TRUNCATE TABLE vc_revocation_list CASCADE;
+TRUNCATE TABLE audit_logs CASCADE;
+TRUNCATE TABLE verifiable_credentials CASCADE;
