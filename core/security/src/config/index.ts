@@ -51,5 +51,6 @@ export const config = {
     url: getEnv("REDIS_URL"),
   },
 
+  coreDID: getEnv("CORE_DID"),
   corePrivateKey: getEnv("CORE_PRIVATE_KEY"),
 };
