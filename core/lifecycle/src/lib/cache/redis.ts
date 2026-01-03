@@ -18,9 +18,7 @@ export const initRedis = (): Redis => {
       retryStrategy: (times) => Math.min(times * 50, 2000),
     });
 
-    redisClient.on("connect", () =>
-      log.success("Lifecycle Redis connected.")
-    );
+    redisClient.on("connect", () => log.success("Lifecycle Redis connected."));
     redisClient.on("error", (err) => log.error("Redis Error", err));
   }
   return redisClient;
