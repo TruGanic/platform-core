@@ -37,9 +37,12 @@ function getEnvNumber(key: string, defaultValue: number): number {
 // 7. The Config Object
 export const config = {
   nodeEnv: nodeEnv,
-  port: getEnvNumber("PORT", 3001),
+  port: getEnvNumber("PORT", 3000),
 
   redis: {
     url: getEnv("REDIS_URL"),
   },
+
+  securityServiceUrl: getEnv("SECURITY_SERVICE_URL", "http://localhost:3001"),
+  authRequired: getEnv("AUTH_REQUIRED", "true"),
 };
