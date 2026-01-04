@@ -12,4 +12,3 @@ export function setupRoutes(app: Express): void {
 
 // Export individual routers for direct use if needed
 export { default as apiRoutes } from "./api.routes";
-
