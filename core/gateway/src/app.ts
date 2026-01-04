@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { config } from "@/config";
-import apiRoutes from "@/routes/api.routes";
+import { setupRoutes } from "@/routes";
 
 const app = express();
 
@@ -21,9 +21,6 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // API Routes
-// Note: Individual routes can apply authMiddleware and authorizeMiddleware as needed
-// For global authentication, uncomment the line below:
-// app.use(authMiddleware);
-app.use("/api", apiRoutes);
+setupRoutes(app);
 
 export default app;
