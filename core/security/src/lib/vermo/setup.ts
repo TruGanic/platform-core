@@ -19,7 +19,6 @@ export function createVeramoAgent() {
     const { getResolver: keyDidResolver } = require("key-did-resolver");
     Object.assign(resolverConfig, keyDidResolver());
   } catch (error) {
-    // key-did-resolver is optional, so we just warn if it's not available
     log.warn("key-did-resolver not available, skipping did:key support");
   }
 

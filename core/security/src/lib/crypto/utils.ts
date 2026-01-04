@@ -129,29 +129,45 @@ export function extractPublicKeyFromDID(
 export function createSignaturePayload(request: {
   method: string;
   path: string;
-  body?: any;
-  headers?: Record<string, string>;
   timestamp: string;
   nonce: string;
+  body?: any;
+  headers?: Record<string, string>;
 }): string {
   // Create canonical payload for signing
-  // Exclude signature-related headers to avoid circular dependency
-  const {
-    "x-signature": _,
-    "x-plugin-did": __,
-    ...otherHeaders
-  } = request.headers || {};
+  // List of headers to exclude
+  const excludedHeaders = new Set([
+    "x-signature",
+    "x-plugin-did",
+    "accept",
+    "accept-encoding",
+    "host",
+    "connection",
+    "user-agent",
+    "content-length",
+  ]);
+
+  // Filter out excluded headers (case-insensitive comparison)
+  const otherHeaders: Record<string, string> = {};
+  if (request.headers) {
+    for (const [key, value] of Object.entries(request.headers)) {
+      const lowerKey = key.toLowerCase();
+      if (!excludedHeaders.has(lowerKey)) {
+        otherHeaders[key] = value;
+      }
+    }
+  }
+
+  // Normalize body: undefined/null -> {} to match client behavior
+  const normalizedBody =
+    request.body !== undefined && request.body !== null ? request.body : {};
 
   const payload = {
     method: request.method,
     path: request.path,
-    body: request.body
-      ? typeof request.body === "string"
-        ? request.body
-        : JSON.stringify(request.body)
-      : "",
     timestamp: request.timestamp,
     nonce: request.nonce,
+    body: normalizedBody,
     headers: otherHeaders,
   };
 

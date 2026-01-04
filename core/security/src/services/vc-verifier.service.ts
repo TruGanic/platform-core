@@ -10,6 +10,7 @@ import { Resolver } from "did-resolver";
 import { getResolver as webDidResolver } from "web-did-resolver";
 import { query } from "@/lib/db";
 import { config } from "@/config";
+import { log } from "@/lib/logger";
 
 export class VCVerifierService {
   private didResolver: DIDResolverService;
@@ -264,14 +265,33 @@ export class VCVerifierService {
         return parseInt(revocationResult[0].count) > 0;
       }
 
-      // If we can't find the VC in the database, we can't verify revocation
-      // This might be OK if the VC was issued elsewhere, but log it
-      console.warn("VC not found in database for revocation check");
+      const issuer = typeof vc.issuer === "string" ? vc.issuer : vc.issuer.id;
+      if (issuer === this.coreDID) {
+        // VC was issued by this system - it MUST be in the database
+        log.warn(
+          "VC issued by this system but not found in database - treating as invalid",
+          {
+            did: vc.credentialSubject?.id,
+            jws: jws?.substring(0, 50) + "...",
+          }
+        );
+        return true; // Treat as revoked/invalid
+      }
+
+      // If VC was issued elsewhere (different issuer), we can't verify revocation
+      // This is OK for decentralized systems - the VC signature is still valid
+      log.warn(
+        "VC not found in database for revocation check (issued elsewhere)",
+        {
+          issuer,
+          did: vc.credentialSubject?.id,
+        }
+      );
       return false;
     } catch (error: any) {
-      console.error("Revocation check error:", error.message);
-      // On error, don't fail verification - just log it
-      return false;
+      log.error("Revocation check error:", error.message);
+      // ✅ FIX: On error, fail safe - treat as revoked instead of allowing
+      return true; // Changed from false to true - fail safe
     }
   }
 

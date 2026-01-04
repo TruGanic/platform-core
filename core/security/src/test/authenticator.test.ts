@@ -11,7 +11,7 @@ const CLIENT_DID =
 const TEST_PLUGIN_ID = "demo-plugin-1";
 const CLIENT_PRIVATE_KEY =
   process.env.CLIENT_PRIVATE_KEY ||
-  "9b0f4b1fac0e55a6e1d554de7ac30b4b012f995d58650c09a119603ab52f76c2";
+  "b224657d76021ec066b46722984fd45e7645401179ffe8cbde4c824b66ee7b15";
 
 async function testAuthenticator() {
   console.log("\n🧪 Testing Authenticator Service...\n");

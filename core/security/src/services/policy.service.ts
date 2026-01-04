@@ -56,6 +56,7 @@ export class PolicyService {
 
       // Extract permissions from VC
       const permissions = vc.credentialSubject?.permissions || [];
+
       log.info("User permissions", { did, permissions, requiredPermission });
 
       // Check if permission is granted
@@ -173,15 +174,19 @@ export class PolicyService {
     // Clean resource: remove API prefixes and normalize
     let cleanResource = resource;
 
-    // Remove common API prefixes
+    // Remove leading slash first for consistent processing
+    cleanResource = cleanResource.replace(/^\//, "");
+
+    // Remove common API prefixes (now without leading slash)
     cleanResource = cleanResource
-      .replace(/^\/api\//, "") // /api/servers/demo-server-1 → servers/demo-server-1
-      .replace(/^\/v\d+\//, "") // /v1/servers/demo-server-1 → servers/demo-server-1
+      .replace(/^api\//, "") // api/servers/demo-server-1 → servers/demo-server-1
+      .replace(/^v\d+\//, "") // v1/servers/demo-server-1 → servers/demo-server-1
       .replace(/^servers\//, "") // servers/demo-server-1 → demo-server-1
       .replace(/^plugins\//, "") // plugins/my-plugin → my-plugin
-      .replace(/^instances\//, "") // instances/my-instance → my-instance
-      .replace(/^\//, "") // Remove leading slash
-      .split("/")[0]; // Take first part (demo-server-1 from servers/demo-server-1)
+      .replace(/^instances\//, ""); // instances/my-instance → my-instance
+
+    // Take the first part (resource name) if there are still slashes
+    cleanResource = cleanResource.split("/")[0];
 
     return `${permissionAction}:${cleanResource}`;
   }
