@@ -15,7 +15,6 @@ import { auditService } from "./audit.service";
 import { query } from "@/lib/db";
 import { initRedis } from "@/lib/cache";
 import { log } from "@/lib/logger";
-import { config } from "@/config";
 
 /**
  * Authenticator Service
@@ -336,16 +335,6 @@ export class AuthenticatorService {
       });
       // Don't throw - nonce marking failure shouldn't break authentication
     }
-  }
-
-  /**
-   * Generate a nonce (helper for testing only)
-   * In production, clients generate their own nonces
-   * This just returns a UUID - doesn't store anything
-   */
-  async generateNonce(did: string): Promise<string> {
-    const { randomUUID } = await import("crypto");
-    return randomUUID();
   }
 
   /**
