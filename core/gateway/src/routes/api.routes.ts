@@ -1,10 +1,6 @@
 // core/gateway/src/routes/api.routes.ts
 import { Router, Request, Response } from "express";
-import {
-  authMiddleware,
-  authorizeMiddleware,
-  authorizeLocalMiddleware,
-} from "@/middleware";
+import { authMiddleware, authorizeMiddleware } from "@/middleware";
 import { log } from "@/lib/logger";
 
 const router = Router();
