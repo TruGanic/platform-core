@@ -1,16 +1,17 @@
 import app from "./app";
 import { config } from "@/config";
 import { initRedis, closeRedis } from "@/lib/cache";
+import { log } from "@/lib/logger";
 
 let server: any;
 
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n${signal} received. Shutting down Gateway...`);
+  log.info(`${signal} received. Shutting down Gateway...`);
   if (server) {
-    server.close(() => console.log("👋 Gateway HTTP server closed."));
+    server.close(() => log.info("👋 Gateway HTTP server closed."));
   }
   await closeRedis();
-  console.log("✅ Gateway shutdown complete.");
+  log.success("Gateway shutdown complete.");
   process.exit(0);
 };
 
@@ -21,7 +22,7 @@ async function startServer() {
 
     // 2. Start Server
     server = app.listen(config.port, () => {
-      console.log(`
+      log.info(`
       =========================================
       🚀 API Gateway Started
       -----------------------------------------
@@ -36,7 +37,7 @@ async function startServer() {
     process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
     process.on("SIGUSR2", () => gracefulShutdown("SIGUSR2"));
   } catch (error) {
-    console.error("❌ Failed to start Gateway server:", error);
+    log.error("Failed to start Gateway server", error);
     process.exit(1);
   }
 }

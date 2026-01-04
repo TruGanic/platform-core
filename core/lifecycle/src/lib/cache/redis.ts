@@ -1,11 +1,12 @@
 import Redis from "ioredis";
 import { config } from "@/config";
+import { log } from "@/lib/logger";
 
 let redisClient: Redis | null = null;
 
 export const initRedis = (): Redis => {
   if (!redisClient) {
-    console.log("🔄 Connecting to Lifecycle Redis...");
+    log.info("🔄 Connecting to Lifecycle Redis...");
 
     if (!config.redis.url) {
       throw new Error("❌ REDIS_URL is missing in .env");
@@ -17,10 +18,8 @@ export const initRedis = (): Redis => {
       retryStrategy: (times) => Math.min(times * 50, 2000),
     });
 
-    redisClient.on("connect", () =>
-      console.log("✅ Lifecycle Redis connected.")
-    );
-    redisClient.on("error", (err) => console.error("❌ Redis Error:", err));
+    redisClient.on("connect", () => log.success("Lifecycle Redis connected."));
+    redisClient.on("error", (err) => log.error("Redis Error", err));
   }
   return redisClient;
 };
@@ -28,7 +27,7 @@ export const initRedis = (): Redis => {
 export const closeRedis = async () => {
   if (redisClient) {
     await redisClient.quit();
-    console.log("✅ Lifecycle Redis closed.");
+    log.success("Lifecycle Redis closed.");
     redisClient = null;
   }
 };

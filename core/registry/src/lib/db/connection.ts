@@ -1,5 +1,6 @@
 import { Pool, QueryResult, PoolClient } from "pg";
 import { config } from "@/config";
+import { log } from "@/lib/logger";
 
 let pool: Pool | null = null;
 
@@ -26,7 +27,7 @@ export function getPool(): Pool {
 
     // Error handling for the pool itself
     pool.on("error", (err) => {
-      console.error("❌ Registry DB: Unexpected error on idle client", err);
+      log.error("Registry DB: Unexpected error on idle client", err);
       process.exit(-1);
     });
   }
@@ -90,7 +91,7 @@ export async function testConnection(): Promise<boolean> {
     await pool.query("SELECT NOW()");
     return true;
   } catch (error) {
-    console.error("❌ Registry DB: Connection test failed:", error);
+    log.error("Registry DB: Connection test failed", error);
     return false;
   }
 }

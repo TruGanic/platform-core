@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { config } from "@/config";
+import { setupRoutes } from "./routes";
 
 const app = express();
 
@@ -17,5 +18,8 @@ app.get("/health", (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Setup all routes
+setupRoutes(app);
 
 export default app;

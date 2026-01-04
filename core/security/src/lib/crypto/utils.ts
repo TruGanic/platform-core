@@ -4,6 +4,7 @@ import { verifyJWT } from "did-jwt";
 import { Resolver } from "did-resolver";
 import { getResolver as webDidResolver } from "web-did-resolver";
 import { ec as EC } from "elliptic";
+import { log } from "@/lib/logger";
 
 /**
  * Supported signature algorithms
@@ -186,7 +187,7 @@ export async function verifySignature(
         });
 
         if (issuer !== did) {
-          console.error("JWT issuer does not match DID");
+          log.error("JWT issuer does not match DID");
           return false;
         }
 
@@ -203,7 +204,7 @@ export async function verifySignature(
         return payloadMatches;
       } catch (jwtError: any) {
         // Not a valid JWT, continue with raw signature verification
-        console.warn(
+        log.warn(
           "JWT verification failed, trying raw signature:",
           jwtError.message
         );
@@ -235,13 +236,13 @@ export async function verifySignature(
       //   return verifyRS256(signature, payload, publicKeyInfo);
 
       default:
-        console.warn(
+        log.warn(
           `Unsupported algorithm: ${algorithm}. Only ES256K is currently implemented.`
         );
         return false;
     }
   } catch (error) {
-    console.error("Signature verification error:", error);
+    log.error("Signature verification error", error);
     return false;
   }
 }
@@ -267,7 +268,7 @@ function verifyES256K(
     const secp256k1 = new EC("secp256k1");
 
     if (!publicKeyJwk.x || !publicKeyJwk.y) {
-      console.error("Invalid JWK: missing x or y coordinates");
+      log.error("Invalid JWK: missing x or y coordinates");
       return false;
     }
 
@@ -276,7 +277,7 @@ function verifyES256K(
     const yBuffer = decodeCoordinate(publicKeyJwk.y);
 
     if (xBuffer.length !== 32 || yBuffer.length !== 32) {
-      console.error(
+      log.error(
         `Invalid coordinate length: X=${xBuffer.length}, Y=${yBuffer.length} (expected 32 each)`
       );
       return false;
@@ -294,13 +295,13 @@ function verifyES256K(
 
     // Validate public key point
     if (!keyPair.getPublic().validate()) {
-      console.error("Invalid public key point - not on secp256k1 curve");
+      log.error("Invalid public key point - not on secp256k1 curve");
       return false;
     }
 
     return verifyWithKeyPair(keyPair, signature, payload);
   } catch (error: any) {
-    console.error("ES256K verification error:", error);
+    log.error("ES256K verification error", error);
     return false;
   }
 }
@@ -367,7 +368,7 @@ function verifyWithKeyPair(
     }
 
     if (signatureBuffer.length !== 64) {
-      console.error(
+      log.error(
         `Invalid signature length: ${signatureBuffer.length} (expected 64)`
       );
       return false;
@@ -383,7 +384,7 @@ function verifyWithKeyPair(
       s: s.toString("hex"),
     });
   } catch (error: any) {
-    console.error("Verification error:", error);
+    log.error("Verification error", error);
     return false;
   }
 }

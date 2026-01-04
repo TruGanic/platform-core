@@ -2,6 +2,7 @@ import app from "@/app";
 import { config } from "@/config";
 import { testConnection, closePool } from "@/lib/db";
 import { initRedis, closeRedis } from "@/lib/cache";
+import { log } from "@/lib/logger";
 
 let server: any;
 
@@ -10,23 +11,23 @@ let server: any;
  * Stops the server, closes DB, and closes Redis
  */
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n${signal} received. Shutting down gracefully...`);
+  log.info(`${signal} received. Shutting down gracefully...`);
 
   // 1. Close the HTTP Server first (Stop accepting new requests)
   if (server) {
     server.close(() => {
-      console.log("👋 HTTP server closed.");
+      log.info("👋 HTTP server closed.");
     });
   }
 
   // 2. Close the Database connection
   await closePool();
-  console.log("✅ Security DB Connection closed.");
+  log.success("Security DB Connection closed.");
 
   // 3. Close the Redis connection
   await closeRedis();
 
-  console.log("Shutdown complete.");
+  log.info("Shutdown complete.");
   process.exit(0);
 };
 
@@ -36,21 +37,21 @@ const gracefulShutdown = async (signal: string) => {
 async function startServer() {
   try {
     // 1. Connect to Database (PostgreSQL)
-    console.log("🔄 Testing Security database connection...");
+    log.info("🔄 Testing Security database connection...");
 
     const isConnected = await testConnection();
     if (!isConnected) {
-      console.error("❌ Security database connection failed");
+      log.error("Security database connection failed");
       process.exit(1);
     }
-    console.log("✅ Security database connection successful");
+    log.success("Security database connection successful");
 
     // 2. Connect to Cache (Redis)
     initRedis();
 
     // 3. Start the App
     server = app.listen(config.port, () => {
-      console.log(`
+      log.info(`
       =========================================
       🚀 Security Service Started
       -----------------------------------------
@@ -65,7 +66,7 @@ async function startServer() {
     process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
     process.on("SIGUSR2", () => gracefulShutdown("SIGUSR2"));
   } catch (error) {
-    console.error("❌ Failed to start Security server:", error);
+    log.error("Failed to start Security server", error);
     process.exit(1);
   }
 }

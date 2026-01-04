@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS verifiable_credentials (
     did VARCHAR(255) NOT NULL,
     plugin_id VARCHAR(255) NOT NULL,
     vc_data JSONB NOT NULL,
-    jws VARCHAR(5000), -- JWT string format
+    jws TEXT, -- JWT string format
     issuer_did VARCHAR(255) NOT NULL,
     issuance_date TIMESTAMP NOT NULL,
     expiration_date TIMESTAMP,
@@ -159,3 +159,9 @@ INSERT INTO verifiable_credentials (
 DELETE FROM vc_revocation_list;
 DELETE FROM audit_logs;
 DELETE FROM verifiable_credentials;
+
+-- Faster than DELETE, also resets auto-increment sequences
+-- Order matters due to foreign key constraints
+TRUNCATE TABLE vc_revocation_list CASCADE;
+TRUNCATE TABLE audit_logs CASCADE;
+TRUNCATE TABLE verifiable_credentials CASCADE;
