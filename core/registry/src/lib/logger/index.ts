@@ -11,7 +11,7 @@ const logFormat = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
-  winston.format.json()
+  winston.format.json(),
 );
 
 // Console format (pretty for development)
@@ -24,14 +24,14 @@ const consoleFormat = winston.format.combine(
       msg += ` ${JSON.stringify(metadata)}`;
     }
     return msg;
-  })
+  }),
 );
 
 // Create logger
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || "info",
   format: logFormat,
-  defaultMeta: { service: "security-service" },
+  defaultMeta: { service: "registry-service" },
   transports: [
     // Write all logs to combined.log
     new winston.transports.File({
@@ -54,7 +54,7 @@ if (config.nodeEnv !== "production") {
   logger.add(
     new winston.transports.Console({
       format: consoleFormat,
-    })
+    }),
   );
 }
 
