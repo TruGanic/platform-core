@@ -9,12 +9,9 @@ import {
 import { log } from "@/lib/logger";
 
 export class SecurityClientService {
-  private securityServiceUrl: string;
   private axiosInstance: AxiosInstance;
 
   constructor(securityServiceUrl: string) {
-    this.securityServiceUrl = securityServiceUrl;
-
     // Create axios instance with timeout and error handling
     this.axiosInstance = axios.create({
       baseURL: securityServiceUrl,
