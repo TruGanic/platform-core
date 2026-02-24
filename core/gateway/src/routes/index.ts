@@ -1,5 +1,6 @@
 import { Express } from "express";
 import apiRoutes from "@/routes/api.routes";
+import farmerRoutes from "@/routes/farmer.routes";
 
 /**
  * Register all routes with the Express app
@@ -8,6 +9,8 @@ import apiRoutes from "@/routes/api.routes";
 export function setupRoutes(app: Express): void {
   // API routes
   app.use("/api", apiRoutes);
+  // Farmer API (zero-trust then forward to test-farmer-server)
+  app.use("/api", farmerRoutes);
 }
 
 // Export individual routers for direct use if needed
