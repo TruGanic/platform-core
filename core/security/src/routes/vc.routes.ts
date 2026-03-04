@@ -147,9 +147,13 @@ router.get("/current", async (req: Request, res: Response) => {
       });
     }
 
-    const results = await query<{ vc_data: any }>(
+    const results = await query<{
+      vc_id: string;
+      jws: string;
+      vc_data: any;
+    }>(
       `
-        SELECT vc_data
+        SELECT vc_id, jws, vc_data
         FROM verifiable_credentials
         WHERE did = $1
           AND revoked = false
@@ -167,11 +171,14 @@ router.get("/current", async (req: Request, res: Response) => {
       });
     }
 
-    const vc = results[0].vc_data;
+    const row = results[0];
+    const vc = row.vc_data;
     const permissions = vc?.credentialSubject?.permissions || [];
 
     log.info("Fetched current VC for DID", {
       did,
+      vcId: row.vc_id,
+      hasJws: !!row.jws,
       permissionsCount: Array.isArray(permissions) ? permissions.length : 0,
     });
 
@@ -179,6 +186,8 @@ router.get("/current", async (req: Request, res: Response) => {
       success: true,
       vc,
       permissions,
+      vcId: row.vc_id,
+      jws: row.jws,
     });
   } catch (error: any) {
     log.error("Get current VC route error", {
