@@ -132,6 +132,67 @@ router.post("/verify", async (req: Request, res: Response) => {
 });
 
 /**
+ * Get current VC for a DID
+ * GET /api/vc/current?did=...
+ *
+ * Returns the latest non-revoked, non-expired VC for the given DID.
+ */
+router.get("/current", async (req: Request, res: Response) => {
+  try {
+    const did = (req.query.did as string) || "";
+    if (!did) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required query parameter: did",
+      });
+    }
+
+    const results = await query<{ vc_data: any }>(
+      `
+        SELECT vc_data
+        FROM verifiable_credentials
+        WHERE did = $1
+          AND revoked = false
+          AND (expiration_date IS NULL OR expiration_date > NOW())
+        ORDER BY issuance_date DESC
+        LIMIT 1
+      `,
+      [did]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No active VC found for DID",
+      });
+    }
+
+    const vc = results[0].vc_data;
+    const permissions = vc?.credentialSubject?.permissions || [];
+
+    log.info("Fetched current VC for DID", {
+      did,
+      permissionsCount: Array.isArray(permissions) ? permissions.length : 0,
+    });
+
+    return res.json({
+      success: true,
+      vc,
+      permissions,
+    });
+  } catch (error: any) {
+    log.error("Get current VC route error", {
+      error: error.message,
+      stack: error.stack,
+    });
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch current VC",
+    });
+  }
+});
+
+/**
  * Revoke VC
  * POST /api/vc/revoke
  *

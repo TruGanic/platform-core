@@ -11,14 +11,16 @@ import { log } from "@/lib/logger";
  * an action on a resource based on their VC permissions.
  *
  * Permission Format:
- * - "read:demo-server-1" - Read access to demo-server-1
- * - "write:demo-server-2" - Write access to demo-server-2
- * - "delete:*" - Delete access to all resources
+ * - "read:farmer" - Read access to farmer API (e.g. GET /api/farmer/...)
+ * - "write:farmer" - Write access to farmer API (e.g. POST /api/farmer/register)
+ * - "read:data", "write:data" - Data access
+ * - "delete:*" - Delete access to all resources (wildcard)
  *
- * Resource Mapping:
+ * Resource Mapping (real context):
+ * - POST /api/farmer/register → "write:farmer" (service-farmer / farmer-server)
+ * - GET /api/farmer/... → "read:farmer"
  * - POST /api/servers/demo-server-2 → "write:demo-server-2"
  * - GET /api/servers/demo-server-1 → "read:demo-server-1"
- * - DELETE /api/servers/demo-server-1 → "delete:demo-server-1"
  */
 export class PolicyService {
   /**
@@ -179,13 +181,13 @@ export class PolicyService {
 
     // Remove common API prefixes (now without leading slash)
     cleanResource = cleanResource
-      .replace(/^api\//, "") // api/servers/demo-server-1 → servers/demo-server-1
-      .replace(/^v\d+\//, "") // v1/servers/demo-server-1 → servers/demo-server-1
+      .replace(/^api\//, "") // api/farmer/register → farmer/register
+      .replace(/^v\d+\//, "") // v1/... → ...
       .replace(/^servers\//, "") // servers/demo-server-1 → demo-server-1
       .replace(/^plugins\//, "") // plugins/my-plugin → my-plugin
       .replace(/^instances\//, ""); // instances/my-instance → my-instance
 
-    // Take the first part (resource name) if there are still slashes
+    // First path segment = resource id (e.g. farmer → "write:farmer", demo-server-1 → "write:demo-server-1")
     cleanResource = cleanResource.split("/")[0];
 
     return `${permissionAction}:${cleanResource}`;
