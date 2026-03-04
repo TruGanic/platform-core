@@ -78,7 +78,9 @@ export async function authMiddleware(
       signature,
       request: {
         method: req.method,
-        path: req.path,
+        // Use originalUrl so the path in the signature matches what the client signs
+        // Example: /api/farmer/auth/register (not stripped to /farmer/auth/register)
+        path: req.originalUrl,
         body: req.body,
         headers: req.headers as Record<string, string>,
         timestamp: timestamp,
