@@ -162,6 +162,18 @@ export function createSignaturePayload(request: {
   const normalizedBody =
     request.body !== undefined && request.body !== null ? request.body : {};
 
+  // Debug: raw values going into canonical payload
+  log.info("createSignaturePayload input (server, pre-payload)", {
+    method: request.method,
+    rawPath: request.path,
+    timestamp: request.timestamp,
+    nonce: request.nonce,
+    rawBody: request.body,
+    rawHeaders: request.headers,
+    filteredHeaders: otherHeaders,
+    normalizedBody,
+  });
+
   const payload = {
     method: request.method,
     path: request.path,
@@ -171,7 +183,14 @@ export function createSignaturePayload(request: {
     headers: otherHeaders,
   };
 
-  return JSON.stringify(payload);
+  const payloadStr = JSON.stringify(payload);
+  log.info("createSignaturePayload (server)", {
+    path: request.path,
+    method: request.method,
+    payloadLength: payloadStr.length,
+    payloadSha256Hex: createHash("sha256").update(payloadStr).digest("hex"),
+  });
+  return payloadStr;
 }
 
 /**
@@ -284,18 +303,31 @@ function verifyES256K(
     const secp256k1 = new EC("secp256k1");
 
     if (!publicKeyJwk.x || !publicKeyJwk.y) {
-      log.error("Invalid JWK: missing x or y coordinates");
+      log.error("ES256K verify failed: JWK missing x or y coordinates");
       return false;
     }
 
     // Decode coordinates (handles both hex and base64url)
-    const xBuffer = decodeCoordinate(publicKeyJwk.x);
-    const yBuffer = decodeCoordinate(publicKeyJwk.y);
+    let xBuffer: Buffer;
+    let yBuffer: Buffer;
+    try {
+      xBuffer = decodeCoordinate(publicKeyJwk.x);
+      yBuffer = decodeCoordinate(publicKeyJwk.y);
+    } catch (coordErr: any) {
+      log.error("ES256K verify failed: could not decode JWK x/y", {
+        error: coordErr?.message,
+        xLength: String(publicKeyJwk.x).length,
+        yLength: String(publicKeyJwk.y).length,
+      });
+      return false;
+    }
 
     if (xBuffer.length !== 32 || yBuffer.length !== 32) {
-      log.error(
-        `Invalid coordinate length: X=${xBuffer.length}, Y=${yBuffer.length} (expected 32 each)`
-      );
+      log.error("ES256K verify failed: invalid coordinate length", {
+        xLen: xBuffer.length,
+        yLen: yBuffer.length,
+        expected: 32,
+      });
       return false;
     }
 
@@ -384,9 +416,11 @@ function verifyWithKeyPair(
     }
 
     if (signatureBuffer.length !== 64) {
-      log.error(
-        `Invalid signature length: ${signatureBuffer.length} (expected 64)`
-      );
+      log.error("ES256K verify failed: invalid signature length", {
+        length: signatureBuffer.length,
+        expected: 64,
+        payloadSha256Hex: createHash("sha256").update(payload).digest("hex"),
+      });
       return false;
     }
 
@@ -395,12 +429,22 @@ function verifyWithKeyPair(
     const s = signatureBuffer.slice(32, 64);
 
     // Verify signature
-    return keyPair.verify(hash, {
+    const valid = keyPair.verify(hash, {
       r: r.toString("hex"),
       s: s.toString("hex"),
     });
+    if (!valid) {
+      log.warn("ES256K verify failed: keyPair.verify returned false", {
+        payloadSha256Hex: createHash("sha256").update(payload).digest("hex"),
+        signatureLength: signatureBuffer.length,
+      });
+    }
+    return valid;
   } catch (error: any) {
-    log.error("Verification error", error);
+    log.error("ES256K verification error", {
+      message: error?.message,
+      payloadSha256Hex: createHash("sha256").update(payload).digest("hex"),
+    });
     return false;
   }
 }

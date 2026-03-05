@@ -11,6 +11,7 @@ import {
   createSignaturePayload,
   verifySignature,
 } from "@/lib/crypto/utils";
+import { createHash } from "crypto";
 import { auditService } from "./audit.service";
 import { query } from "@/lib/db";
 import { initRedis } from "@/lib/cache";
@@ -80,6 +81,30 @@ export class AuthenticatorService {
           valid: false,
           error: "Failed to resolve DID",
         };
+      }
+
+      // Debug: log resolved DID document (sanitized) to verify keys match expected
+      try {
+        const doc = didResolution.document;
+        const vm = doc?.verificationMethod?.[0];
+        const pkJwk: any = vm?.publicKeyJwk ?? null;
+        log.info("Resolved DID document (debug)", {
+          did: doc?.id,
+          verificationMethodId: vm?.id,
+          publicKeyJwk: pkJwk
+            ? {
+                kty: pkJwk.kty,
+                crv: pkJwk.crv,
+                x: pkJwk.x,
+                y: pkJwk.y,
+              }
+            : null,
+        });
+      } catch (e: any) {
+        log.warn("Failed to log resolved DID document (debug)", {
+          did,
+          error: e?.message,
+        });
       }
 
       // 2. Verify nonce (prevent replay attacks)
@@ -154,7 +179,34 @@ export class AuthenticatorService {
         };
       }
 
+      // Debug: raw request received from gateway before building signature payload
+      log.info("Security raw request for signature (pre-payload)", {
+        did,
+        method: req.method,
+        path: req.path,
+        timestamp: req.timestamp,
+        nonce: req.nonce,
+        headers: req.headers,
+        body: req.body,
+      });
+
       const signaturePayload = createSignaturePayload(req);
+      // Debug: what we verify against (hash + path so client can compare)
+      const payloadHash = createHash("sha256")
+        .update(signaturePayload)
+        .digest("hex");
+      log.info("Signature verification input (server)", {
+        did,
+        payloadLength: signaturePayload.length,
+        payloadSha256Hex: payloadHash,
+        pathInPayload: req.path,
+        methodInPayload: req.method,
+        signatureLength: signature?.length ?? 0,
+        signaturePreview: signature
+          ? `${signature.slice(0, 20)}...${signature.slice(-10)}`
+          : "(none)",
+      });
+
       const signatureValid = await verifySignature(
         signature,
         signaturePayload,
@@ -163,7 +215,11 @@ export class AuthenticatorService {
       );
 
       if (!signatureValid) {
-        log.warn("Invalid signature", { did });
+        log.warn("Invalid signature", {
+          did,
+          payloadSha256Hex: payloadHash,
+          hint: "Compare payloadSha256Hex and path with client-side logs",
+        });
         await auditService.logAuthentication(
           did,
           false,

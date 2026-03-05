@@ -190,6 +190,12 @@ export class PolicyService {
     // First path segment = resource id (e.g. farmer → "write:farmer", demo-server-1 → "write:demo-server-1")
     cleanResource = cleanResource.split("/")[0];
 
+    // Special-case mapping for farmer API → farmer-server permissions
+    // Example: POST /api/farmer/auth/register → "write:farmer-server"
+    if (cleanResource === "farmer") {
+      cleanResource = "farmer-server";
+    }
+
     return `${permissionAction}:${cleanResource}`;
   }
 

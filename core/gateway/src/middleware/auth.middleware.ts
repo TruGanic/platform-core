@@ -72,6 +72,22 @@ export async function authMiddleware(
       });
     }
 
+    // Debug: raw request as seen by gateway before building auth payload
+    log.info("Gateway raw request for auth (pre-payload)", {
+      did,
+      method: req.method,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      timestamp,
+      nonce,
+      signatureLength: signature?.length ?? 0,
+      signaturePreview: signature
+        ? `${signature.slice(0, 20)}...${signature.slice(-10)}`
+        : "(none)",
+      headers: req.headers,
+      body: req.body,
+    });
+
     // Prepare authentication request
     const authRequest: AuthenticateRequest = {
       did,
@@ -88,12 +104,15 @@ export async function authMiddleware(
       },
     };
 
-    log.info("Authenticating request", {
+    // Debug: exact payload forwarded to security service
+    log.info("Gateway auth payload to security (post-payload)", {
       did,
       method: req.method,
       path: req.path,
+      originalUrl: req.originalUrl,
       hasNonce: !!nonce,
       hasTimestamp: !!timestamp,
+      authRequest,
     });
 
     // Authenticate with security service

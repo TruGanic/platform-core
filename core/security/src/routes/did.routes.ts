@@ -132,4 +132,43 @@ router.post("/invalidate", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Invalidate DID cache for multiple DIDs (e.g. after key rotation).
+ * POST /api/did/invalidate-batch
+ *
+ * Request Body:
+ * { "dids": ["did:web:...:core", "did:web:...:clients:farmer-client"] }
+ */
+router.post("/invalidate-batch", async (req: Request, res: Response) => {
+  try {
+    const { dids } = req.body;
+
+    if (!Array.isArray(dids) || dids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing or empty required field: dids (array of DID strings)",
+      });
+    }
+
+    log.info("DID cache batch invalidation", { count: dids.length, dids });
+
+    await Promise.all(dids.map((did: string) => didResolverService.invalidateCache(did)));
+
+    res.json({
+      success: true,
+      message: "DID cache invalidated successfully",
+      dids,
+    });
+  } catch (error: any) {
+    log.error("DID cache batch invalidation error", {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to invalidate DID cache",
+    });
+  }
+});
+
 export default router;
