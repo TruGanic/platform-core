@@ -196,6 +196,12 @@ export class PolicyService {
       cleanResource = "farmer-server";
     }
 
+    // Special-case mapping for agents API → certification-body-server permissions
+    // Example: POST /api/agents/register → "write:certification-body-server"
+    if (cleanResource === "agents") {
+      cleanResource = "certification-body-server";
+    }
+
     return `${permissionAction}:${cleanResource}`;
   }
 
