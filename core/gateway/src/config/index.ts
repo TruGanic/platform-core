@@ -46,4 +46,8 @@ export const config = {
   securityServiceUrl: getEnv("SECURITY_SERVICE_URL", "http://localhost:3001"),
   authRequired: getEnv("AUTH_REQUIRED", "true"),
   farmerServiceUrl: getEnv("FARMER_SERVICE_URL", "http://localhost:3005"),
+  certificationBodyServiceUrl: getEnv(
+    "CERTIFICATION_BODY_SERVICE_URL",
+    "http://localhost:3006"
+  ),
 };
