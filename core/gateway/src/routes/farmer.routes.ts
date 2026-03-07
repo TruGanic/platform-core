@@ -9,21 +9,25 @@ const router = Router();
 const farmerBase = config.farmerServiceUrl;
 
 /**
- * Forward request to test-farmer-server after zero-trust auth + authz.
- * Requires VC permission write:farmer for POST, read:farmer for GET, etc.
+ * Forward request to farmer service after zero-trust auth + authz.
+ * Requires VC permission write:farmer-server for POST/PATCH, read:farmer-server for GET.
  */
 async function forwardToFarmerServer(req: Request, res: Response): Promise<void> {
   try {
-    // Forward to same path on farmer service: /api/farmer/auth/...
     const targetPath = `/api${req.path}`;
     const url = `${farmerBase}${targetPath}`;
     const headers: Record<string, string> = {};
-    ["content-type", "x-plugin-did", "x-signature", "x-timestamp", "x-nonce"].forEach(
-      (h) => {
-        const v = req.headers[h];
-        if (v && typeof v === "string") headers[h] = v;
-      }
-    );
+    [
+      "content-type",
+      "x-plugin-did",
+      "x-signature",
+      "x-timestamp",
+      "x-nonce",
+      "authorization",
+    ].forEach((h) => {
+      const v = req.headers[h];
+      if (v && typeof v === "string") headers[h] = v;
+    });
 
     const response = await axios({
       method: req.method,
@@ -45,9 +49,59 @@ async function forwardToFarmerServer(req: Request, res: Response): Promise<void>
   }
 }
 
-// POST /api/farmer/auth/register – auth + authz then forward
+// Auth
 router.post(
   "/farmer/auth/register",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+router.post(
+  "/farmer/auth/login",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+router.post(
+  "/farmer/auth/refresh",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+
+// Logs
+router.get(
+  "/farmer/logs/recent",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+router.get(
+  "/farmer/logs/history",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+router.post(
+  "/farmer/logs/planting",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+router.post(
+  "/farmer/logs/input",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+router.post(
+  "/farmer/logs/harvest",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToFarmerServer(req, res)
+);
+router.patch(
+  "/farmer/logs/harvest/:id/transport",
   authMiddleware,
   authorizeMiddleware(),
   (req: Request, res: Response) => forwardToFarmerServer(req, res)
