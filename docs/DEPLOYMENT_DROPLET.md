@@ -270,7 +270,7 @@ The workflow will:
 
 1. SSH into the droplet.
 2. `cd` to the deploy path, `git fetch --tags` and `git checkout <tag>`.
-3. Run `npm ci`, `npm run build:shared`, `npm run build:all`.
+3. Run `npm ci`, `npm run build:shared`, `npm run build:all` (clean, reproducible install).
 4. Run `pm2 restart all` and `pm2 save`.
 
 Check the **Actions** tab in the repo for run status and logs.

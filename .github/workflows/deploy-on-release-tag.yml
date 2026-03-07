@@ -41,7 +41,7 @@ jobs:
             cd $DEPLOY_PATH
             git fetch --tags origin
             git checkout "$TAG"
-            npm install
+            npm ci
             npm run build:shared
             npm run build:all
             pm2 restart all
