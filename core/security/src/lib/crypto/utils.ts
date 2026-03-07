@@ -147,13 +147,14 @@ export function createSignaturePayload(request: {
     "content-length",
   ]);
 
-  // Filter out excluded headers (case-insensitive comparison)
+  // Filter and normalize header keys to lowercase so payload matches what clients sign
+  // (clients use lowercase in createSignableMessage; HTTP clients may send different casing)
   const otherHeaders: Record<string, string> = {};
   if (request.headers) {
     for (const [key, value] of Object.entries(request.headers)) {
       const lowerKey = key.toLowerCase();
       if (!excludedHeaders.has(lowerKey)) {
-        otherHeaders[key] = value;
+        otherHeaders[lowerKey] = value;
       }
     }
   }
