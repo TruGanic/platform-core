@@ -69,7 +69,7 @@ npm install
 # Build shared types first (required by other services)
 npm run build:shared
 
-# Build all services
+# Build all services (tsc + tsc-alias rewrites @/ to relative paths in dist)
 npm run build:all
 ```
 
