@@ -159,6 +159,14 @@ export function createSignaturePayload(request: {
     }
   }
 
+  // Build headers object with keys in sorted order so JSON string is deterministic
+  // (client and server must produce identical payload string for signature verification)
+  const sortedHeaderKeys = Object.keys(otherHeaders).sort();
+  const canonicalHeaders: Record<string, string> = {};
+  for (const k of sortedHeaderKeys) {
+    canonicalHeaders[k] = otherHeaders[k];
+  }
+
   // Normalize body: undefined/null -> {} to match client behavior
   const normalizedBody =
     request.body !== undefined && request.body !== null ? request.body : {};
@@ -181,7 +189,7 @@ export function createSignaturePayload(request: {
     timestamp: request.timestamp,
     nonce: request.nonce,
     body: normalizedBody,
-    headers: otherHeaders,
+    headers: canonicalHeaders,
   };
 
   const payloadStr = JSON.stringify(payload);
