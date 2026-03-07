@@ -135,7 +135,7 @@ export function createSignaturePayload(request: {
   headers?: Record<string, string>;
 }): string {
   // Create canonical payload for signing
-  // List of headers to exclude
+  // List of headers to exclude (client never signs these; HTTP clients may add them automatically)
   const excludedHeaders = new Set([
     "x-signature",
     "x-plugin-did",
@@ -145,6 +145,10 @@ export function createSignaturePayload(request: {
     "connection",
     "user-agent",
     "content-length",
+    "if-none-match",
+    "if-modified-since",
+    "if-match",
+    "if-range",
   ]);
 
   // Filter and normalize header keys to lowercase so payload matches what clients sign
