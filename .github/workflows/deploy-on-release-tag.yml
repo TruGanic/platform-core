@@ -1,0 +1,49 @@
+# Deploy platform-core to droplet when a release tag is pushed (from main).
+# Trigger: push a tag matching v* (e.g. v1.0.0, v1.2.3).
+#
+# Required GitHub secrets:
+#   DEPLOY_HOST    - Droplet IP or hostname (e.g. 129.212.238.68)
+#   SSH_PRIVATE_KEY - Private key for SSH (root or deploy user) to the droplet
+#
+# Optional (defaults shown):
+#   DEPLOY_USER    - SSH user (default: root)
+#   DEPLOY_PATH    - Repo path on server (default: ~/platform-core)
+
+name: Deploy on release tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    name: Deploy to droplet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get tag name
+        id: tag
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER || 'root' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -e
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            [ -z "$DEPLOY_PATH" ] && DEPLOY_PATH=~/platform-core
+            TAG="${{ steps.tag.outputs.TAG }}"
+            echo "Deploying tag: $TAG to $DEPLOY_PATH"
+            cd $DEPLOY_PATH
+            git fetch --tags origin
+            git checkout "$TAG"
+            npm ci
+            npm run build:shared
+            npm run build:all
+            pm2 restart all
+            pm2 save
+            echo "Deploy completed: $TAG"

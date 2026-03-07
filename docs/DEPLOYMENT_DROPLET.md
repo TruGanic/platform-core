@@ -243,6 +243,44 @@ pm2 restart all
 
 ---
 
+## 10. CI/CD: Deploy on release tag
+
+A GitHub Actions workflow deploys to the droplet when you **push a tag** matching `v*` (e.g. `v1.0.0`).
+
+### Setup (once)
+
+1. **GitHub repo** → Settings → Secrets and variables → Actions.
+2. Add these **secrets**:
+   - **`DEPLOY_HOST`** – Droplet IP or hostname (e.g. `129.212.238.68`).
+   - **`SSH_PRIVATE_KEY`** – Full contents of the private key that can SSH into the droplet (e.g. the key you use with Termius/OpenSSH).
+3. Optional:
+   - **`DEPLOY_USER`** – SSH user (default: `root`).
+   - **`DEPLOY_PATH`** – Path to the repo on the server (default: `~/platform-core`; use `/opt/platform-core` if you cloned there).
+
+### How to deploy
+
+From your machine (with the repo and latest `main` merged):
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow will:
+
+1. SSH into the droplet.
+2. `cd` to the deploy path, `git fetch --tags` and `git checkout <tag>`.
+3. Run `npm ci`, `npm run build:shared`, `npm run build:all`.
+4. Run `pm2 restart all` and `pm2 save`.
+
+Check the **Actions** tab in the repo for run status and logs.
+
+### Workflow file
+
+- [.github/workflows/deploy-on-release-tag.yml](../.github/workflows/deploy-on-release-tag.yml)
+
+---
+
 ## Troubleshooting
 
 - **Gateway can’t reach Security**: Ensure `SECURITY_SERVICE_URL=http://127.0.0.1:3001` and Security is running (`pm2 status`).
