@@ -79,4 +79,20 @@ router.post(
   (req: Request, res: Response) => forwardToCertBodyServer(req, res)
 );
 
+// GET /api/agents/dashboard-stats – auth + authz then forward
+router.get(
+  "/agents/dashboard-stats",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToCertBodyServer(req, res)
+);
+
+// GET /api/agents/inspection-report/:batchId – auth + authz then forward
+router.get(
+  "/agents/inspection-report/:batchId",
+  authMiddleware,
+  authorizeMiddleware(),
+  (req: Request, res: Response) => forwardToCertBodyServer(req, res)
+);
+
 export default router;
