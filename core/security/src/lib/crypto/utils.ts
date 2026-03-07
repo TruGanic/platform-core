@@ -163,6 +163,21 @@ export function createSignaturePayload(request: {
     }
   }
 
+  // Normalize body: undefined/null -> {} to match client behavior
+  const normalizedBody =
+    request.body !== undefined && request.body !== null ? request.body : {};
+
+  // Client only includes content-type in signed payload when request has a body (hasBody).
+  // For PATCH/POST with body {} or no body, client does not sign content-type; exclude it here too.
+  const hasBody =
+    normalizedBody !== undefined &&
+    normalizedBody !== null &&
+    (typeof normalizedBody !== "object" ||
+      Object.keys(normalizedBody).length > 0);
+  if (!hasBody) {
+    delete otherHeaders["content-type"];
+  }
+
   // Build headers object with keys in sorted order so JSON string is deterministic
   // (client and server must produce identical payload string for signature verification)
   const sortedHeaderKeys = Object.keys(otherHeaders).sort();
@@ -170,10 +185,6 @@ export function createSignaturePayload(request: {
   for (const k of sortedHeaderKeys) {
     canonicalHeaders[k] = otherHeaders[k];
   }
-
-  // Normalize body: undefined/null -> {} to match client behavior
-  const normalizedBody =
-    request.body !== undefined && request.body !== null ? request.body : {};
 
   // Debug: raw values going into canonical payload
   log.info("createSignaturePayload input (server, pre-payload)", {
