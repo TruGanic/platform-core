@@ -16,7 +16,7 @@ router.get("/audit/recent", async (req: Request, res: Response) => {
     const redis = getRedis();
     if (!redis) {
       return res.status(503).json({
-        error: "Redis not available",
+        error: "Redis not available (Gateway may not have inited Redis yet; ensure REDIS_URL is set and a protected route was hit)",
         entries: [],
         timestamp: new Date().toISOString(),
       });
@@ -41,6 +41,9 @@ router.get("/audit/recent", async (req: Request, res: Response) => {
       entries,
       count: entries.length,
       timestamp: new Date().toISOString(),
+      ...(entries.length === 0 && {
+        hint: "Audit only records requests to protected routes (/api/farmer/*, /api/agents/*, /api/data). Check Gateway logs for 'Audit:' if Redis write fails.",
+      }),
     });
   } catch (err) {
     res.status(500).json({
