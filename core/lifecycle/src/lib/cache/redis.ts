@@ -24,6 +24,8 @@ export const initRedis = (): Redis => {
   return redisClient;
 };
 
+export const getRedis = (): Redis | null => redisClient;
+
 export const closeRedis = async () => {
   if (redisClient) {
     await redisClient.quit();
