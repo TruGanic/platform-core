@@ -2,6 +2,7 @@ import { Express } from "express";
 import apiRoutes from "@/routes/api.routes";
 import farmerRoutes from "@/routes/farmer.routes";
 import agentsRoutes from "@/routes/agents.routes";
+import auditRoutes from "@/routes/audit.routes";
 
 /**
  * Register all routes with the Express app
@@ -10,6 +11,8 @@ import agentsRoutes from "@/routes/agents.routes";
 export function setupRoutes(app: Express): void {
   // API routes
   app.use("/api", apiRoutes);
+  // Audit log (for dashboard; no auth so dashboard can proxy)
+  app.use("/api", auditRoutes);
   // Farmer API (zero-trust then forward to test-farmer-server)
   app.use("/api", farmerRoutes);
   // Agents API (zero-trust then forward to certification-body service)
