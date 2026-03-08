@@ -18,6 +18,10 @@ router.get("/audit/recent", async (req: Request, res: Response) => {
       return res.status(503).json({
         error: "Redis not available (Gateway may not have inited Redis yet; ensure REDIS_URL is set and a protected route was hit)",
         entries: [],
+        total: 0,
+        page: 1,
+        limit: DEFAULT_LIMIT,
+        totalPages: 0,
         timestamp: new Date().toISOString(),
       });
     }
@@ -26,7 +30,11 @@ router.get("/audit/recent", async (req: Request, res: Response) => {
       Math.max(1, parseInt(String(req.query.limit), 10) || DEFAULT_LIMIT),
       MAX_LIMIT
     );
-    const raw = await redis.lrange(AUDIT_KEY, 0, limit - 1);
+    const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);
+    const offset = (page - 1) * limit;
+
+    const total = await redis.llen(AUDIT_KEY);
+    const raw = await redis.lrange(AUDIT_KEY, offset, offset + limit - 1);
     const entries: AuditEntry[] = raw
       .map((s) => {
         try {
@@ -37,11 +45,17 @@ router.get("/audit/recent", async (req: Request, res: Response) => {
       })
       .filter(Boolean) as AuditEntry[];
 
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
     res.json({
       entries,
       count: entries.length,
+      total,
+      page,
+      limit,
+      totalPages,
       timestamp: new Date().toISOString(),
-      ...(entries.length === 0 && {
+      ...(entries.length === 0 && total === 0 && {
         hint: "Audit only records requests to protected routes (/api/farmer/*, /api/agents/*, /api/data). Check Gateway logs for 'Audit:' if Redis write fails.",
       }),
     });
@@ -49,6 +63,10 @@ router.get("/audit/recent", async (req: Request, res: Response) => {
     res.status(500).json({
       error: (err as Error).message,
       entries: [],
+      total: 0,
+      page: 1,
+      limit: DEFAULT_LIMIT,
+      totalPages: 0,
       timestamp: new Date().toISOString(),
     });
   }
