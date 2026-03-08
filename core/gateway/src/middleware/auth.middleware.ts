@@ -4,6 +4,7 @@ import { SecurityClientService } from "../services/security-client.service";
 import { AuthenticateRequest } from "@shared/types";
 import { config } from "@/config";
 import { log } from "@/lib/logger";
+import { pushAuditEntry } from "@/lib/audit";
 
 // Initialize security client
 const securityServiceUrl = config.securityServiceUrl;
@@ -66,6 +67,14 @@ export async function authMiddleware(
         hasTimestamp: !!timestamp,
         path: req.path,
       });
+      pushAuditEntry({
+        did: did || null,
+        method: req.method,
+        path: req.originalUrl || req.path,
+        granted: false,
+        reason: "Missing required headers",
+        timestamp: new Date().toISOString(),
+      });
       return res.status(401).json({
         error:
           "Missing required headers: x-plugin-did, x-signature, x-nonce, and x-timestamp are required",
@@ -123,6 +132,14 @@ export async function authMiddleware(
         did,
         error: authResponse.error,
         path: req.path,
+      });
+      pushAuditEntry({
+        did,
+        method: req.method,
+        path: req.originalUrl || req.path,
+        granted: false,
+        reason: authResponse.error || "Authentication failed",
+        timestamp: new Date().toISOString(),
       });
       return res.status(401).json({
         error: authResponse.error || "Authentication failed",
