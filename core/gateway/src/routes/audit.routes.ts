@@ -11,6 +11,96 @@ const AUDIT_KEY = "audit:log";
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
 
+/** Aggregate counts from audit entries (methods + granted/denied) */
+function aggregateAuditStats(entries: AuditEntry[]): {
+  totalRequests: number;
+  get: number;
+  post: number;
+  put: number;
+  patch: number;
+  delete: number;
+  other: number;
+  granted: number;
+  denied: number;
+} {
+  const methods: Record<string, number> = { get: 0, post: 0, put: 0, patch: 0, delete: 0, other: 0 };
+  let granted = 0;
+  let denied = 0;
+  for (const e of entries) {
+    const m = (e.method || "").toUpperCase();
+    if (m === "GET") methods.get++;
+    else if (m === "POST") methods.post++;
+    else if (m === "PUT") methods.put++;
+    else if (m === "PATCH") methods.patch++;
+    else if (m === "DELETE") methods.delete++;
+    else methods.other++;
+    if (e.granted) granted++;
+    else denied++;
+  }
+  return {
+    totalRequests: entries.length,
+    get: methods.get,
+    post: methods.post,
+    put: methods.put,
+    patch: methods.patch,
+    delete: methods.delete,
+    other: methods.other,
+    granted,
+    denied,
+  };
+}
+
+/** GET /api/audit/stats - aggregated counts for dashboard overview */
+router.get("/audit/stats", async (_req: Request, res: Response) => {
+  try {
+    const redis = getRedis();
+    if (!redis) {
+      return res.status(503).json({
+        error: "Redis not available",
+        totalRequests: 0,
+        get: 0,
+        post: 0,
+        put: 0,
+        patch: 0,
+        delete: 0,
+        other: 0,
+        granted: 0,
+        denied: 0,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    const raw = await redis.lrange(AUDIT_KEY, 0, -1);
+    const entries: AuditEntry[] = raw
+      .map((s) => {
+        try {
+          return JSON.parse(s) as AuditEntry;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as AuditEntry[];
+    const stats = aggregateAuditStats(entries);
+    res.json({
+      ...stats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: (err as Error).message,
+      totalRequests: 0,
+      get: 0,
+      post: 0,
+      put: 0,
+      patch: 0,
+      delete: 0,
+      other: 0,
+      granted: 0,
+      denied: 0,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 router.get("/audit/recent", async (req: Request, res: Response) => {
   try {
     const redis = getRedis();
