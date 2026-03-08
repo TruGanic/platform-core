@@ -6,6 +6,7 @@ import { initRedis } from "@/lib/cache";
 import { createHash } from "crypto";
 import { config } from "@/config";
 import { log } from "@/lib/logger";
+import { pushAuditEntry } from "@/lib/audit";
 
 // Initialize security client
 const securityServiceUrl = config.securityServiceUrl;
@@ -136,6 +137,14 @@ export function authorizeMiddleware() {
           path: req.path,
           method: req.method,
         });
+        pushAuditEntry({
+          did: null,
+          method: req.method,
+          path: req.originalUrl || req.path,
+          granted: false,
+          reason: "DID not found",
+          timestamp: new Date().toISOString(),
+        });
         return res.status(401).json({
           error:
             "Unauthenticated - DID not found. Authentication must happen before authorization.",
@@ -190,6 +199,14 @@ export function authorizeMiddleware() {
           resource: req.path,
           reason: authzResponse.reason,
         });
+        pushAuditEntry({
+          did,
+          method: req.method,
+          path: req.originalUrl || req.path,
+          granted: false,
+          reason: authzResponse.reason,
+          timestamp: new Date().toISOString(),
+        });
         return res.status(403).json({
           error: "Insufficient permissions",
           reason: authzResponse.reason,
@@ -203,6 +220,13 @@ export function authorizeMiddleware() {
         did,
         action: req.method,
         resource: req.path,
+      });
+      pushAuditEntry({
+        did,
+        method: req.method,
+        path: req.originalUrl || req.path,
+        granted: true,
+        timestamp: new Date().toISOString(),
       });
       next();
     } catch (error: any) {
