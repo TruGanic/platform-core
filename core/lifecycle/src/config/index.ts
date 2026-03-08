@@ -44,11 +44,11 @@ export const config = {
   },
 
   // URLs for health polling (SLA metrics). Same as Gateway so Lifecycle can measure platform availability.
-  gatewayUrl: getEnv("GATEWAY_URL", "http://localhost:3000"),
+  gatewayUrl: getEnv("GATEWAY_URL", "http://129.212.238.68:3000"),
   securityServiceUrl: getEnv("SECURITY_SERVICE_URL", "http://129.212.238.68:3001"),
   registryServiceUrl: getEnv("REGISTRY_SERVICE_URL", "http://129.212.238.68:3002"),
   lifecycleServiceUrl: getEnv("LIFECYCLE_SERVICE_URL", "http://129.212.238.68:3003"),
-  dashboardBackendUrl: getEnv("DASHBOARD_BACKEND_URL", "http://localhost:3100"),
+  dashboardBackendUrl: getEnv("DASHBOARD_BACKEND_URL", "http://129.212.238.68:3100"),
   farmerServiceUrl: getEnv("FARMER_SERVICE_URL", "https://truganic-farmer-app-2k88s.ondigitalocean.app"),
   certificationBodyServiceUrl: getEnv(
     "CERTIFICATION_BODY_SERVICE_URL",

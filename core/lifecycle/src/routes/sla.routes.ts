@@ -13,7 +13,7 @@ const SERVICE_LABELS: Record<string, string> = {
   security: "Security Service",
   registry: "Registry Service",
   lifecycle: "Lifecycle Service",
-  "dashboard-backend": "Security Admin Dashboard Backend",
+  "dashboard-backend": "Security Admin Dashboard",
   "certification-body": "Certification Body Service",
   farmer: "Farmer Service",
   "insight-engine": "ML Insight Engine",
