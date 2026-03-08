@@ -42,4 +42,20 @@ export const config = {
   redis: {
     url: getEnv("REDIS_URL"),
   },
+
+  // URLs for health polling (SLA metrics). Same as Gateway so Lifecycle can measure platform availability.
+  gatewayUrl: getEnv("GATEWAY_URL", "http://129.212.238.68:3000"),
+  securityServiceUrl: getEnv("SECURITY_SERVICE_URL", "http://129.212.238.68:3001"),
+  registryServiceUrl: getEnv("REGISTRY_SERVICE_URL", "http://129.212.238.68:3002"),
+  lifecycleServiceUrl: getEnv("LIFECYCLE_SERVICE_URL", "http://129.212.238.68:3003"),
+  dashboardBackendUrl: getEnv("DASHBOARD_BACKEND_URL", "http://129.212.238.68:3100"),
+  farmerServiceUrl: getEnv("FARMER_SERVICE_URL", "https://truganic-farmer-app-2k88s.ondigitalocean.app"),
+  certificationBodyServiceUrl: getEnv(
+    "CERTIFICATION_BODY_SERVICE_URL",
+    "https://truganic-certbody-app-r3ygv.ondigitalocean.app"
+  ),
+  insightEngineUrl: getEnv("INSIGHT_ENGINE_URL", "http://148.116.67.235:8090"),
+  blockchainFarmerOrgUrl: getEnv("BLOCKCHAIN_FARMER_ORG_URL", "http://35.198.229.152:3000"),
+  blockchainTransportOrgUrl: getEnv("BLOCKCHAIN_TRANSPORT_ORG_URL", "http://35.198.229.152:3001"),
+  blockchainRetailerOrgUrl: getEnv("BLOCKCHAIN_RETAILER_ORG_URL", "http://35.198.229.152:3002"),
 };
