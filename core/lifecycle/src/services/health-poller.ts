@@ -24,6 +24,11 @@ function getTargets(): PollTarget[] {
     { id: "registry", label: "Registry Service", url: `${config.registryServiceUrl}${HEALTH_PATH}` },
     { id: "lifecycle", label: "Lifecycle Service", url: `${config.lifecycleServiceUrl}${HEALTH_PATH}` },
     {
+      id: "dashboard-backend",
+      label: "Security Admin Dashboard Backend",
+      url: `${config.dashboardBackendUrl}${HEALTH_PATH}`,
+    },
+    {
       id: "certification-body",
       label: "Certification Body Service",
       url: `${config.certificationBodyServiceUrl}/api/agents/health`,
