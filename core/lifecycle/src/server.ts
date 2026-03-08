@@ -1,6 +1,7 @@
 import app from "./app";
 import { config } from "@/config";
 import { initRedis, closeRedis } from "@/lib/cache";
+import { startHealthPoller } from "@/services/health-poller";
 import { log } from "@/lib/logger";
 
 let server: any;
@@ -18,9 +19,12 @@ const gracefulShutdown = async (signal: string) => {
 async function startServer() {
   try {
     // 1. Start Redis
-    initRedis();
+    const redis = initRedis();
 
-    // 2. Start Server
+    // 2. Start SLA health poller (no changes to Gateway or plugins)
+    startHealthPoller(redis);
+
+    // 4. Start HTTP server
     server = app.listen(config.port, () => {
       log.info(`
       =========================================
