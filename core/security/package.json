@@ -14,7 +14,8 @@
     "test:audit": "ts-node -r tsconfig-paths/register src/test/audit.test.ts",
     "test:authenticator": "ts-node -r tsconfig-paths/register src/test/authenticator.test.ts",
     "test:policy": "ts-node -r tsconfig-paths/register src/test/policy.test.ts",
-    "test:all": "npm run test:did-resolver && npm run test:vc-issuer && npm run test:vc-verifier && npm run test:audit"
+    "test:all": "npm run test:did-resolver && npm run test:vc-issuer && npm run test:vc-verifier && npm run test:audit && npm run test:authenticator && npm run test:policy",
+    "test:ci": "npm run test:all"
   },
   "dependencies": {
     "@digitalbazaar/vc": "^4.0.0",

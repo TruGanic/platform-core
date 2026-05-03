@@ -12,7 +12,7 @@ const router = Router();
  *
  * Request Body:
  * {
- *   "did": "did:web:truganic.github.io:did-documents:clients:demo-client-1"
+ *   "did": "did:web:truganic.github.io:did-documents:clients:ci-automation-client"
  * }
  *
  * Response:
