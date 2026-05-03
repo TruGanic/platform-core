@@ -133,15 +133,15 @@ INSERT INTO verifiable_credentials (
     revoked
 ) VALUES (
     'vc-test-001',
-    'did:web:truganic.github.io:did-documents:clients:demo-client-1',
-    'demo-client-1',
+    'did:web:truganic.github.io:did-documents:clients:ci-automation-client',
+    'ci-automation-client',
     '{
         "@context": ["https://www.w3.org/2018/credentials/v1"],
         "type": ["VerifiableCredential", "PluginPermissionCredential"],
         "issuer": "did:web:truganic.github.io:did-documents:core",
         "credentialSubject": {
-            "id": "did:web:truganic.github.io:did-documents:clients:demo-client-1",
-            "pluginId": "demo-client-1",
+            "id": "did:web:truganic.github.io:did-documents:clients:ci-automation-client",
+            "pluginId": "ci-automation-client",
             "permissions": ["read:data", "write:data"],
             "version": "1.0.0"
         },
