@@ -95,6 +95,10 @@ jobs:
       - name: Install npm dependencies (workspaces)
         run: npm ci
 
+      # @shared/types package.json points to dist/ — must compile before ts-node can resolve imports
+      - name: Build shared types
+        run: npm run build:shared
+
       - name: Run security test suite
         working-directory: core/security
         run: npm run test:ci
