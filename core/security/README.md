@@ -147,7 +147,7 @@ Resolve a DID to its DID document.
 
 ```json
 {
-  "did": "did:web:truganic.github.io:did-documents:clients:demo-client-1"
+  "did": "did:web:truganic.github.io:did-documents:clients:ci-automation-client"
 }
 ```
 
@@ -650,6 +650,19 @@ security/
 - `ts-node` - TypeScript execution
 - `nodemon` - Development server
 - `@types/*` - Type definitions
+
+## Automated tests (GitHub Actions)
+
+The **platform-core** repo workflow `.github/workflows/security-hourly.yml` runs `npm run test:ci` in this package **every hour** (UTC) and on pushes that touch `core/security/**`.
+
+**Repository secrets** (GitHub → Settings → Secrets and variables → Actions):
+
+| Secret | Purpose |
+|--------|---------|
+| `TRUGANIC_CI_CORE_PRIVATE_KEY` | Issuer key (hex) for `CORE_DID` — must match the public key in the published **core** DID document. |
+| `TRUGANIC_CI_CLIENT_PRIVATE_KEY` | Client key (hex) for **ci-automation-client** — must match `did-documents/clients/ci-automation-client/did.json`. |
+
+Postgres and Redis are started as **service containers**; schema is applied from `database/ci-schema.sql`.
 
 ## License
 
