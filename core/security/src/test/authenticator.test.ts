@@ -6,12 +6,14 @@ import { createSignaturePayload, signPayload } from "@/lib/crypto/utils";
 import { randomUUID } from "crypto";
 import { closeRedis } from "@/lib/cache";
 
+// Pairs with did-documents/clients/ci-automation-client (not for production apps)
 const CLIENT_DID =
-  "did:web:truganic.github.io:did-documents:clients:demo-client-1";
+  process.env.CLIENT_DID ||
+  "did:web:truganic.github.io:did-documents:clients:ci-automation-client";
 const TEST_PLUGIN_ID = "demo-plugin-1";
 const CLIENT_PRIVATE_KEY =
   process.env.CLIENT_PRIVATE_KEY ||
-  "b224657d76021ec066b46722984fd45e7645401179ffe8cbde4c824b66ee7b15";
+  "2aa57cbd0f4129178195d12eb39c3b404e34ff9bab0f8d6d6b7aed1c243c5b05";
 
 async function testAuthenticator() {
   console.log("\n🧪 Testing Authenticator Service...\n");
@@ -77,6 +79,7 @@ async function testAuthenticator() {
       console.log("   Permissions:", authResult.permissions, "\n");
     } else {
       console.log("❌ Authentication failed:", authResult.error, "\n");
+      throw new Error(`Authentication should succeed: ${authResult.error}`);
     }
 
     // Step 5: Try to reuse same nonce (should fail)
@@ -86,6 +89,7 @@ async function testAuthenticator() {
     );
     if (reusedResult.valid) {
       console.error("❌ Should have rejected reused nonce!");
+      throw new Error("Nonce reuse should be rejected");
     } else {
       console.log("✅ Correctly rejected reused nonce");
       console.log("   Error:", reusedResult.error, "\n");
@@ -117,6 +121,7 @@ async function testAuthenticator() {
       console.log("   Permissions:", newAuthResult.permissions, "\n");
     } else {
       console.log("❌ Authentication failed:", newAuthResult.error, "\n");
+      throw new Error(`Second auth should succeed: ${newAuthResult.error}`);
     }
 
     console.log("=".repeat(60));

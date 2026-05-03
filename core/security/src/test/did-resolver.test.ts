@@ -57,7 +57,7 @@ async function testDIDResolver() {
   // Test DID (use your actual DID)
   const testDID =
     process.env.TEST_DID ||
-    "did:web:truganic.github.io:did-documents:clients:demo-client-1";
+    "did:web:truganic.github.io:did-documents:clients:ci-automation-client";
 
   try {
     // Test 1: Resolve DID (first time - should fetch from network)
@@ -152,7 +152,7 @@ async function testIntegration() {
     // Test: Use DID Resolver to get DID, then verify we can extract public key
     const testDID =
       process.env.TEST_DID ||
-      "did:web:truganic.github.io:did-documents:clients:demo-client-1";
+      "did:web:truganic.github.io:did-documents:clients:ci-automation-client";
 
     console.log("Test: DID Resolver + Crypto Utils Integration");
 

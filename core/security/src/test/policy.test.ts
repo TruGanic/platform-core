@@ -16,7 +16,8 @@ import { closeRedis } from "@/lib/cache";
  */
 
 const CLIENT_DID =
-  "did:web:truganic.github.io:did-documents:clients:demo-client-1";
+  process.env.CLIENT_DID ||
+  "did:web:truganic.github.io:did-documents:clients:ci-automation-client";
 const TEST_PLUGIN_ID = "demo-plugin-policy-test";
 
 async function testPolicyService() {
