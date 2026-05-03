@@ -54,7 +54,7 @@ export const config = {
     "CERTIFICATION_BODY_SERVICE_URL",
     "https://truganic-certbody-app-r3ygv.ondigitalocean.app"
   ),
-  insightEngineUrl: getEnv("INSIGHT_ENGINE_URL", "http://148.116.67.235:8090"),
+  insightEngineUrl: getEnv("INSIGHT_ENGINE_URL", "http://148.116.67.235:8081"),
   blockchainFarmerOrgUrl: getEnv("BLOCKCHAIN_FARMER_ORG_URL", "http://35.198.229.152:3000"),
   blockchainTransportOrgUrl: getEnv("BLOCKCHAIN_TRANSPORT_ORG_URL", "http://35.198.229.152:3001"),
   blockchainRetailerOrgUrl: getEnv("BLOCKCHAIN_RETAILER_ORG_URL", "http://35.198.229.152:3002"),
