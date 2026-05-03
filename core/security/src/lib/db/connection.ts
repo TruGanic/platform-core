@@ -9,16 +9,17 @@ let pool: Pool | null = null;
  */
 export function getPool(): Pool {
   if (!pool) {
+    // CI / local Docker Postgres: set DB_SSL=false. RDS and many clouds: omit or use true.
+    const useSsl =
+      process.env.DB_SSL !== "false" && process.env.DB_SSL !== "0";
+
     pool = new Pool({
       host: config.database.host,
       port: config.database.port,
       user: config.database.user,
       password: config.database.password,
       database: config.database.database,
-      // AWS RDS specific requirement
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      ssl: useSsl ? { rejectUnauthorized: false } : undefined,
       // Pool settings
       max: 10,
       idleTimeoutMillis: 30000,
