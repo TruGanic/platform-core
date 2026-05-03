@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@shared/types": ["../../../shared/types"]
     }
   },
   "include": ["src/**/*"],
