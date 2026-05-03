@@ -1,0 +1,100 @@
+# Security service integration tests — runs every hour (UTC) and on demand.
+#
+# Required GitHub repository secrets (Settings → Secrets and variables → Actions):
+#   TRUGANIC_CI_CORE_PRIVATE_KEY   — hex secp256k1 key for CORE_DID (issuer), must match
+#                                      published did-documents core verification key.
+#   TRUGANIC_CI_CLIENT_PRIVATE_KEY — hex client key for ci-automation-client DID (authenticator tests).
+#
+# Optional: push to main/develop also runs this workflow (path-filtered).
+
+name: Security service tests
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - "core/security/**"
+      - ".github/workflows/security-hourly.yml"
+
+jobs:
+  security-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: security_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d security_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: security_ci
+      DB_SSL: "false"
+      REDIS_URL: redis://localhost:6379
+      NODE_ENV: test
+      CORE_DID: did:web:truganic.github.io:did-documents:core
+      CORE_PRIVATE_KEY: ${{ secrets.TRUGANIC_CI_CORE_PRIVATE_KEY }}
+      CLIENT_DID: did:web:truganic.github.io:did-documents:clients:ci-automation-client
+      CLIENT_PRIVATE_KEY: ${{ secrets.TRUGANIC_CI_CLIENT_PRIVATE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Verify secrets are set
+        run: |
+          if [ -z "$CORE_PRIVATE_KEY" ] || [ -z "$CLIENT_PRIVATE_KEY" ]; then
+            echo "::error::Add repo secrets TRUGANIC_CI_CORE_PRIVATE_KEY and TRUGANIC_CI_CLIENT_PRIVATE_KEY (see workflow file header)."
+            exit 1
+          fi
+          echo "Secrets present (values not printed)."
+
+      - name: Apply database schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d security_ci -v ON_ERROR_STOP=1 \
+            -f core/security/database/ci-schema.sql
+
+      - name: Install npm dependencies (workspaces)
+        run: npm ci
+
+      - name: Run security test suite
+        working-directory: core/security
+        run: npm run test:ci
