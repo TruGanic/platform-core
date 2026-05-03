@@ -12,8 +12,13 @@ export const initRedis = (): Redis => {
       throw new Error("❌ REDIS_URL is missing in .env");
     }
 
-    redisClient = new Redis(config.redis.url, {
-      tls: {},
+    const url = config.redis.url;
+    // rediss:// = TLS (e.g. cloud). redis:// = local / CI — do not force tls:{} or connection hangs.
+    const useTls =
+      url.startsWith("rediss://") || process.env.REDIS_TLS === "true";
+
+    redisClient = new Redis(url, {
+      ...(useTls ? { tls: {} } : {}),
       keyPrefix: "security:",
       retryStrategy: (times) => Math.min(times * 50, 2000),
     });
